@@ -1,6 +1,6 @@
 # Validation evidence
 
-Tracking issue: [#1](https://github.com/cttsai1985/StringKernel4LIBSVM/issues/1).
+Tracking issue: [#1](https://github.com/cttsai1985/string-kernels-libsvm/issues/1).
 This record distinguishes observed results from planned checks.
 
 ## RED: process regressions before implementation
@@ -105,7 +105,7 @@ before merge. Consult the linked PR for their exact SHA, logs, and final result.
 
 ## Cross-platform numeric parsing regression
 
-[Hosted run 39899594757](https://github.com/cttsai1985/StringKernel4LIBSVM/actions/runs/39899594757)
+[Hosted run 39899594757](https://github.com/cttsai1985/string-kernels-libsvm/actions/runs/39899594757)
 established additional RED evidence after the build corrections. macOS rejected
 the valid subnormal in `dataset labels retain the finite double range and signed
 zero`; macOS and Windows both accepted the hexadecimal token in `malformed
@@ -122,7 +122,7 @@ hexadecimal/double-sign inputs. MEASURED corrected local development suite:
 
 ## Dependency bootstrap and layout cleanup (#3)
 
-Tracking issue: [#3](https://github.com/cttsai1985/StringKernel4LIBSVM/issues/3).
+Tracking issue: [#3](https://github.com/cttsai1985/string-kernels-libsvm/issues/3).
 The modernization evidence above records historical paths and remains unchanged.
 Current examples are `examples/regression/train_sequences.tsv` and
 `examples/regression/test_sequences.tsv`; historical source is
