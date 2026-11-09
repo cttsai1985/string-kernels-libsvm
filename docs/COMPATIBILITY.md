@@ -1,5 +1,16 @@
 # Compatibility reference
 
+## Repository identity
+
+The repository is named `string-kernels-libsvm`; its documentation title is
+**String Kernels for LIBSVM**. This names the supported string kernels and their
+LIBSVM precomputed-matrix integration.
+
+The repository rename preserves the existing `StringKernelConverter` command,
+`stringkernel` C++ namespace and targets, `StringKernel4LIBSVM` installation
+paths, and version output documented below. Existing builds and consumers keep
+their established identifiers.
+
 ## Supported command line
 
 ```text
