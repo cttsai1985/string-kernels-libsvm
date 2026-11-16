@@ -47,8 +47,8 @@ self-kernels. Sequence suffixes outside the shared span contribute only to their
 sequence's self-kernel. This extension is part of the project's compatibility
 contract.
 
-The aligned weighted-degree kernel is described in section 4.2.3 of
-[Sonnenburg et al., Large Scale Multiple Kernel Learning](https://www.mlsec.org/docs/2007-lskm.pdf).
+The aligned weighted-degree kernel is described in §3.1.1, Eq. (14), p. 1542 of
+[Sonnenburg et al., Large Scale Multiple Kernel Learning](https://jmlr.org/papers/v7/sonnenburg06a.html).
 
 ## Spectrum kernel, converter type `2`
 
@@ -127,7 +127,7 @@ is inferred.
 | SSK (`3`) | Ordered k-byte subsequences, including gaps | Small local insertions/deletions should preserve partial similarity; account for its higher cost. |
 
 For a small readable example and matching train/predict commands, see the
-[README](../README.md#choose-a-kernel-and-run-a-small-classification-example).
+[README](QUICKSTART.md#choose-a-kernel-and-run-a-small-classification-example).
 
 Primary definitions: [Leslie, Eskin & Noble, The spectrum kernel (PSB 2002)](https://cseweb.ucsd.edu/~eeskin/papers/spectrum-psb02.pdf) and
 [Lodhi et al., Text classification using string kernels (JMLR 2002)](https://www.jmlr.org/papers/volume2/lodhi02a/lodhi02a.pdf).
@@ -181,3 +181,10 @@ matrices as ordinary features changes the kernel and can corrupt the serial
 column. LIBSVM's
 [precomputed-kernel specification](https://github.com/cjlin1/libsvm/blob/v337/README#precomputed-kernels)
 describes the solver's input contract.
+
+## Bibliographic records
+
+Full publication metadata and reusable BibTeX entries are in
+[the README references](../README.md#references-and-attribution) and
+[REFERENCES.bib](../REFERENCES.bib). Positional similarity is the explicit
+indicator-feature baseline above; no separate published algorithm is claimed.

@@ -40,10 +40,10 @@ after the explicit bootstrap step.
 
 ## Finish the change
 
-Branch from `origin/dev` and target feature PRs to `dev`. Preserve ordered
-commits when merging; promote verified `dev` changes to `master` through a PR.
+Branch from `origin/main` and target feature PRs to `main`. Preserve ordered
+commits when merging.
 Every PR must pass CI and independent review on its current commit. Close the
-tracking issue with evidence after master promotion, then remove the
+tracking issue with evidence after merging to `main`, then remove the
 implementation worktree. Keep a regression gate that fails if the fixed behavior returns.
 Do not rewrite an operator's working tree with `git reset --hard` or `git stash`.
 

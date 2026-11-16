@@ -16,6 +16,9 @@ The exact files, source URLs, and SHA-256 digests are recorded in
 [`cmake/libsvm.json`](cmake/libsvm.json).
 In an installation, the complete `COPYRIGHT` file is beside this notice.
 
+LIBSVM uses BSD-3-Clause terms. That dependency license does not license
+project-owned code. See [distribution requirements](https://github.com/cttsai1985/string-kernels-libsvm/blob/main/docs/LICENSING.md).
+
 ## Catch2
 
 Tests use [Catch2 v3.16.1](https://github.com/catchorg/Catch2/tree/v3.16.1), licensed
