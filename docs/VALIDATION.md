@@ -234,3 +234,10 @@ The package's wheel/sdist build does not include the LIBSVM cache. A fresh outsi
 checkout install passed the initial 37-test suite; hosted release-wheel verification
 also includes the iterator regression. These fixtures prove implementation behavior,
 not real-world predictive accuracy.
+
+The hosted macOS wheel jobs exposed an accidental build of CLI dataset/parser
+code in the Python-only configuration. A source-boundary regression poisoned
+those sources with `#error` and failed before the fix. Python-only CMake now
+builds only `src/kernels.cpp` and the binding; the full C++ library/CLI remain
+available in their normal configuration. This avoids imposing the CLI parser's
+macOS library requirements on mathematical wheels.

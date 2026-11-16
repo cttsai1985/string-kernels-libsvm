@@ -45,6 +45,30 @@ def inspect_archives(directory: Path) -> Path:
     return wheels[0]
 
 
+def verify_kernel_only_build(directory: Path, destination: Path) -> None:
+    """Prove CLI parsing/filesystem code is outside the wheel's build boundary."""
+    with tarfile.open(next(directory.glob('*.tar.gz'))) as archive:
+        # Only materialize regular files/directories from our inspected sdist.
+        for member in archive.getmembers():
+            target = (destination / member.name).resolve()
+            if not target.is_relative_to(destination.resolve()):
+                raise ValueError('source archive contains an unsafe path')
+            if member.isdir():
+                target.mkdir(parents=True, exist_ok=True)
+            elif member.isfile():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with archive.extractfile(member) as stream:
+                    target.write_bytes(stream.read())
+            else:
+                raise ValueError('source archive contains a link or special file')
+    source = next(path for path in destination.iterdir() if path.is_dir())
+    for name in ('dataset.cpp', 'libsvm_writer.cpp', 'cli.cpp', 'cli_options.cpp'):
+        (source / 'src' / name).write_text('#error CLI code must not enter a Python build\n')
+    (source / 'cmake/Libsvm.cmake').write_text('message(FATAL_ERROR "LIBSVM must not enter a Python build")\n')
+    subprocess.run([sys.executable, '-m', 'build', str(source), '--wheel',
+                    '--outdir', str(destination / 'kernel-only-wheel')], check=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dist', type=Path, required=True)
@@ -56,6 +80,7 @@ def main() -> None:
     environment.pop('PYTHONPATH', None)
     with tempfile.TemporaryDirectory(prefix='string-kernels-installed-') as temporary:
         root = Path(temporary)
+        verify_kernel_only_build(args.dist.resolve(), root / 'source-boundary')
         venv.EnvBuilder(with_pip=True).create(root / 'environment')
         executable = root / 'environment' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
         subprocess.run([str(executable), '-m', 'pip', 'install', '--no-cache-dir',

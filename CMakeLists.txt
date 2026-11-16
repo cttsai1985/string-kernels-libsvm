@@ -38,6 +38,14 @@ function(stringkernel_project_target target)
   endif()
 endfunction()
 
+if(STRINGKERNEL_BUILD_PYTHON)
+  include(cmake/Python.cmake)
+  if(NOT STRINGKERNEL_BUILD_CLI AND NOT BUILD_TESTING)
+    # A wheel needs mathematics only, not CLI parsing or filesystem dependencies.
+    return()
+  endif()
+endif()
+
 add_library(stringkernel STATIC src/kernels.cpp src/dataset.cpp src/libsvm_writer.cpp)
 set_target_properties(stringkernel PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(stringkernel PUBLIC cxx_std_17)
@@ -45,10 +53,6 @@ target_include_directories(stringkernel PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 stringkernel_project_target(stringkernel)
-
-if(STRINGKERNEL_BUILD_PYTHON)
-  include(cmake/Python.cmake)
-endif()
 
 if(STRINGKERNEL_BUILD_CLI)
   add_library(stringkernel_options STATIC src/cli_options.cpp)

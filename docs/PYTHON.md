@@ -105,7 +105,8 @@ python scripts/verify_package.py --dist build/distributions
 ```
 
 `build` creates an sdist and builds a wheel from it. The verification script
-inspects licenses and archive contents, creates a fresh environment outside the
+inspects licenses and archive contents, proves the wheel still builds with
+deliberately unbuildable CLI sources, creates a fresh environment outside the
 source tree, installs the wheel, and runs the numerical, scikit-learn, and
 installed-metadata tests. CI repeats installed-wheel tests for every supported
 Python/platform combination. Raw C++ development still uses the
