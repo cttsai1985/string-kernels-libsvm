@@ -87,7 +87,7 @@ cmake --preset coverage
 cmake --build --preset coverage
 ctest --preset coverage
 python3 -c "from pathlib import Path; Path('coverage').mkdir(exist_ok=True)"
-gcovr --root . --filter '(StringKernels|Dataset|LibsvmWriter|CliOptions|StringKernelConverter)\.cpp$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
+gcovr --root . --filter 'src/.*\.cpp$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
 ```
 
 The filter includes project implementation and excludes tests and upstream code.
@@ -101,7 +101,7 @@ Use the pinned formatter version from CI:
 
 ```sh
 python3 -m pip install clang-format==19.1.7
-clang-format --dry-run --Werror Dataset.h Dataset.cpp CliOptions.h CliOptions.cpp StringKernels.h StringKernels.cpp LibsvmWriter.h LibsvmWriter.cpp StringKernelConverter.cpp tests/test_dataset.cpp tests/test_options.cpp tests/test_kernels.cpp tests/test_writer.cpp
+clang-format --dry-run --Werror include/stringkernel/*.hpp src/*.hpp src/*.cpp python/*.cpp tests/*.cpp
 ```
 
 To apply formatting, replace `--dry-run --Werror` with `-i`. Keep downloaded LIBSVM
@@ -121,11 +121,11 @@ CMake's `GNUInstallDirs` variables:
 
 | Location | Contents |
 | --- | --- |
-| `${CMAKE_INSTALL_BINDIR}` | `StringKernelConverter`, `svm-train`, and `svm-predict`. |
+| `${CMAKE_INSTALL_BINDIR}` | `string-kernels`, `svm-train`, and `svm-predict`. |
 | `${CMAKE_INSTALL_LIBDIR}` | Static `stringkernel` library. |
-| `${CMAKE_INSTALL_INCLUDEDIR}/StringKernel4LIBSVM` | The supported public headers. |
+| `${CMAKE_INSTALL_INCLUDEDIR}/stringkernel` | The supported public headers. |
 | `${CMAKE_INSTALL_LIBDIR}/cmake/StringKernel4LIBSVM` | The `stringkernelTargets.cmake` export and configuration-specific target files. |
-| `${CMAKE_INSTALL_DATADIR}/StringKernel4LIBSVM` | `THIRD_PARTY_NOTICES.md` and LIBSVM `COPYRIGHT`. |
+| `${CMAKE_INSTALL_DATADIR}/StringKernel4LIBSVM` | `LICENSE`, `THIRD_PARTY_NOTICES.md`, and LIBSVM `COPYRIGHT`. |
 
 The usual directory defaults are `bin`, `lib`, `include`, and `share`. Some
 platforms choose a different library directory. No project package configuration
@@ -145,9 +145,9 @@ target_link_libraries(your_target PRIVATE stringkernel::stringkernel)
 Adjust `lib` if your install uses another `CMAKE_INSTALL_LIBDIR`.
 
 ```cpp
-#include "Dataset.h"
-#include "LibsvmWriter.h"
-#include "StringKernels.h"
+#include "stringkernel/dataset.hpp"
+#include "stringkernel/libsvm_writer.hpp"
+#include "stringkernel/kernels.hpp"
 
 #include <iostream>
 
@@ -183,3 +183,9 @@ CI runs the development workflow on Linux, macOS, and Windows. Linux jobs add
 sanitizers, formatting, and project coverage. The production build explicitly
 disables tests to check the dependency boundary. See
 [the workflow](../.github/workflows/ci.yml) for the exact CI commands.
+
+## Python package verification
+
+See [Python development and installed-artifact verification](PYTHON.md#build-and-verify-as-a-contributor).
+The C++ sources use snake_case under `src/`; public headers are in
+`include/stringkernel/`. The optional Python binding is `python/bindings.cpp`.

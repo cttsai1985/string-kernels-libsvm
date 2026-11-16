@@ -1,4 +1,4 @@
-#include "StringKernels.h"
+#include "stringkernel/kernels.hpp"
 
 #include <algorithm>
 #include <cmath>

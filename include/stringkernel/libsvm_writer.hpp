@@ -1,8 +1,8 @@
 #ifndef STRINGKERNEL_LIBSVM_WRITER_H
 #define STRINGKERNEL_LIBSVM_WRITER_H
 
-#include "Dataset.h"
-#include "StringKernels.h"
+#include "stringkernel/dataset.hpp"
+#include "stringkernel/kernels.hpp"
 
 #include <iosfwd>
 

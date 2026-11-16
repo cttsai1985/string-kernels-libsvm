@@ -1,4 +1,4 @@
-#include "LibsvmWriter.h"
+#include "stringkernel/libsvm_writer.hpp"
 
 #include <algorithm>
 #include <cmath>

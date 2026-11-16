@@ -98,7 +98,9 @@ The first hosted Windows configure exposed a real toolchain mismatch: CMake
 3.31.6 predates Visual Studio 2026 support and selected unavailable `nmake` on the
 current runner. CI now pins CMake 4.4.4, which supports that generator. Vendor
 newline conversion is disabled so independent byte hashes remain valid under
-Windows Git settings. Windows CI additionally executes `sample.bat` itself.
+Windows Git settings. That historical revision also executed a Windows batch
+workflow; the first Python package release removes it in favor of portable
+installed-wheel tests.
 
 Current-head hosted checks and an independent reviewer verdict are required
 before merge. Consult the linked PR for their exact SHA, logs, and final result.
@@ -206,3 +208,20 @@ parameter coupling, and derived `O(k*n*m)` pair-work bound. All speed/accuracy
 language remains analytical or descriptive; no performance claim was measured.
 The tiny-decay regression checks both `lambda=1e-300` and the smallest positive
 representable `double`; a gap-free `AA`, `k=2` diagonal stays `1` in both cases.
+
+## Native Python package and naming migration (2026-11-16)
+
+The owner approved implementation/publication, selected BSD-3-Clause, requested
+removal of the planning file and batch workflow, and requested consistent source
+filenames. The command is now `string-kernels`; headers are under
+`include/stringkernel/` and implementations under `src/`.
+
+RED: independently specified Python feature-map and pipeline tests failed to
+import the not-yet-created package. The renamed-command help test then failed
+against the original compiled executable. These failures were observed before
+implementing the corresponding behavior.
+
+The Python build creates an sdist and compiles its wheel without the LIBSVM
+bootstrap. Installed-artifact and cross-platform results are recorded in the
+release and issue closeout, including the exact tested commit. The verifier is
+`python scripts/verify_package.py --dist build/distributions`.

@@ -1,7 +1,7 @@
 #ifndef STRINGKERNEL_OPTIONS_H
 #define STRINGKERNEL_OPTIONS_H
 
-#include "StringKernels.h"
+#include "stringkernel/kernels.hpp"
 
 #include <filesystem>
 #include <optional>

@@ -1,6 +1,6 @@
-#include "Dataset.h"
-#include "LibsvmWriter.h"
-#include "StringKernels.h"
+#include "stringkernel/dataset.hpp"
+#include "stringkernel/kernels.hpp"
+#include "stringkernel/libsvm_writer.hpp"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>

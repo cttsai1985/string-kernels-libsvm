@@ -47,5 +47,5 @@ tracking issue with evidence after merging to `main`, then remove the
 implementation worktree. Keep a regression gate that fails if the fixed behavior returns.
 Do not rewrite an operator's working tree with `git reset --hard` or `git stash`.
 
-The owner has not selected a project license. Do not add or imply a new license
-as part of an unrelated contribution.
+Project-owned contributions are distributed under BSD-3-Clause (see LICENSE).
+Preserve the separate license terms and notices of upstream dependencies.

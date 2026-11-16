@@ -100,6 +100,20 @@ class DependencyPins(unittest.TestCase):
         content = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
         self.assertRegex(content, r"project\(StringKernel4LIBSVM\s+VERSION\s+1\.0\.0\b")
 
+    def test_python_build_and_release_dependencies_are_pinned(self):
+        project = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        for requirement in ("scikit-build-core==1.1.2", "pybind11==3.1.0",
+                            "numpy>=1.23.5", "scikit-learn>=1.3", "numpy==2.2.6",
+                            "scikit-learn==1.7.2", "pytest==9.2.0"):
+            self.assertIn('"' + requirement + '"', project)
+        self.assertIn('cmake.version = "==4.4.4"', project)
+        self.assertIn('ninja.version = "==1.13.0"', project)
+        workflow = (ROOT / ".github/workflows/wheels.yml").read_text(encoding="utf-8")
+        self.assertIn("cibuildwheel==4.3.5", workflow)
+        self.assertIn("build==1.6.1", workflow)
+        binding = (ROOT / "cmake/Python.cmake").read_text(encoding="utf-8")
+        self.assertIn("pybind11 3.1.0 EXACT", binding)
+
     def test_test_framework_archive_is_pinned(self):
         path = ROOT / "cmake" / "Dependencies.cmake"
         self.assertTrue(path.is_file(), "missing test dependency declaration")

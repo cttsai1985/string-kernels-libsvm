@@ -1,0 +1,61 @@
+[build-system]
+requires = ["scikit-build-core==1.1.2", "pybind11==3.1.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "string-kernels-libsvm"
+dynamic = ["version"]
+description = "Native normalized string kernels for NumPy and scikit-learn"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+authors = [{name = "Chia-Ta Tsai"}]
+dependencies = ["numpy>=1.23.5"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: C++",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+sklearn = ["scikit-learn>=1.3"]
+test = ["pytest==9.2.0", "scikit-learn==1.7.2", "numpy==2.2.6"]
+
+[project.urls]
+Repository = "https://github.com/cttsai1985/string-kernels-libsvm"
+Documentation = "https://github.com/cttsai1985/string-kernels-libsvm/blob/main/docs/PYTHON.md"
+
+[tool.scikit-build]
+cmake.version = "==4.4.4"
+ninja.version = "==1.13.0"
+wheel.packages = ["python/stringkernels"]
+install.components = ["python"]
+sdist.exclude = ["build", "dist", "third_party/libsvm", "implementation_plan.md", "sample.bat"]
+
+[tool.scikit-build.cmake.define]
+BUILD_TESTING = "OFF"
+STRINGKERNEL_BUILD_CLI = "OFF"
+STRINGKERNEL_BUILD_PYTHON = "ON"
+
+[[tool.dynamic-metadata]]
+field = "version"
+provider = "scikit_build_core.metadata.regex"
+input = "CMakeLists.txt"
+regex = 'project\(StringKernel4LIBSVM VERSION (?P<value>[0-9.]+)'
+
+[tool.cibuildwheel]
+build = "cp3{10,11,12,13}-*"
+skip = "*-musllinux_* *-win32 *-manylinux_i686"
+test-extras = ["test"]
+test-command = "python -m pytest {project}/tests/test_python_kernels.py {project}/tests/test_sklearn.py {project}/tests/test_package.py -q"
+build-verbosity = 1
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+
+[tool.cibuildwheel.macos]
+archs = ["auto"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]

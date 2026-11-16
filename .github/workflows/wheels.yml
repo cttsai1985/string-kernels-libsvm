@@ -1,0 +1,55 @@
+name: Python packages
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: python-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wheels:
+    name: Wheels (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install cibuildwheel==4.3.5
+      - name: Build and test installed wheels without a LIBSVM bootstrap
+        run: python -m cibuildwheel --output-dir wheelhouse
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  sdist:
+    name: Source distribution and clean installation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install build==1.6.1
+      - name: Build sdist and rebuild its wheel
+        run: python -m build --outdir dist
+      - name: Inspect archives and verify a fresh installation
+        run: python scripts/verify_package.py --dist dist
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: source-distribution
+          path: dist/*.tar.gz
+          if-no-files-found: error

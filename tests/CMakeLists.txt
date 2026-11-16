@@ -7,16 +7,16 @@ include(Catch)
 catch_discover_tests(stringkernel_tests DISCOVERY_MODE PRE_TEST)
 
 add_test(NAME cli COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_cli.py"
-  --converter "$<TARGET_FILE:StringKernelConverter>")
+  --converter "$<TARGET_FILE:string-kernels>")
 add_test(NAME libsvm_integration
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_libsvm_integration.py"
-  --converter "$<TARGET_FILE:StringKernelConverter>"
+  --converter "$<TARGET_FILE:string-kernels>"
   --trainer "$<TARGET_FILE:svm-train>" --predictor "$<TARGET_FILE:svm-predict>"
   --source "${PROJECT_SOURCE_DIR}" --cmake "${CMAKE_COMMAND}"
   --build "${PROJECT_BINARY_DIR}" --config "$<CONFIG>")
 add_test(NAME separation_analysis
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_analysis.py"
-  --converter "$<TARGET_FILE:StringKernelConverter>"
+  --converter "$<TARGET_FILE:string-kernels>"
   --trainer "$<TARGET_FILE:svm-train>" --predictor "$<TARGET_FILE:svm-predict>"
   --source "${PROJECT_SOURCE_DIR}")
 add_test(NAME dependency_pins
