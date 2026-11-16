@@ -45,11 +45,12 @@ class ConverterTests(unittest.TestCase):
     def test_help_and_pinned_versions(self) -> None:
         help_result = self.run_converter("--help")
         self.assertEqual(help_result.returncode, 0, help_result.stderr)
+        self.assertTrue(help_result.stdout.startswith("Usage: string-kernels "))
         self.assertIn("-train", help_result.stdout)
         self.assertIn("-test", help_result.stdout)
         version = self.run_converter("--version")
         self.assertEqual(version.returncode, 0, version.stderr)
-        self.assertEqual(version.stdout, "StringKernel4LIBSVM 1.0.0 (LIBSVM 3.37)\n")
+        self.assertEqual(version.stdout, "string-kernels 1.0.0 (LIBSVM 3.37)\n")
 
     def test_no_arguments_missing_file_and_missing_train_fail(self) -> None:
         self.assert_failure()

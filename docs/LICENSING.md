@@ -1,38 +1,31 @@
-# License status and distribution requirements
+# Licensing and distribution
 
 ## Project code
 
-The repository has no declared license for project-owned code. Do not label the
-whole repository BSD, MIT, or public domain on the strength of a dependency's
-license. A public GitHub repository is not itself a general reuse license;
-[GitHub's license guidance](https://choosealicense.com/no-permission/) explains
-that distinction.
+Project-owned code is licensed under [BSD-3-Clause](../LICENSE), selected by the
+owner on 2026-11-16. The license permits source and binary redistribution subject
+to retention of its notice, conditions, and disclaimer, and prohibits using the
+copyright holders' or contributors' names for endorsement without permission.
+The complete LICENSE text is authoritative. Academic citations attribute the
+published methods and are separate from software licensing.
 
-Selecting project terms requires authorization from the relevant rights holder(s).
-A permissive license suitable for scientific Python distribution is proposed in
-the implementation plan, but it is not adopted by this document. Academic
-citation gives attribution; it does not supply software redistribution rights.
+## Dependencies
 
-## Dependency terms
-
-| Component | License | Distribution obligation |
+| Component | License | How it is distributed here |
 | --- | --- | --- |
-| LIBSVM 3.37 | BSD-3-Clause | Preserve the complete upstream copyright, conditions, and disclaimer in source distributions and in documentation/materials accompanying binaries; do not imply endorsement. |
-| Catch2 v3.16.1 | BSL-1.0 | Retain its notice/license when distributing its source. It is used only for tests and is not linked into the installed library or tools. |
+| LIBSVM 3.37 | BSD-3-Clause | Unmodified source is bootstrapped for the optional C++ CLI build; CMake installs its complete COPYRIGHT with the tools. It is not bundled in Python wheels. |
+| Catch2 v3.16.1 | BSL-1.0 | Test-only; not linked into installed project libraries or wheels. Retain its license if distributing its source. |
+| pybind11 3.1.0 | BSD-3-Clause | Header-only binding code is compiled into the Python extension. Its full notice ships in each wheel. |
+| NumPy; optional scikit-learn | Their own distribution terms | Resolved as separate runtime dependencies, not bundled into this project's wheel. |
+| scikit-build-core, CMake, Ninja, cibuildwheel | Their own distribution terms | Build/release tools installed separately; not bundled into the Python package. |
 
-The authoritative LIBSVM terms are its pinned
-[COPYRIGHT](https://github.com/cjlin1/libsvm/blob/6b907139084abf2da4d6d3cb10dc3b7eaffa2fbb/COPYRIGHT).
-The existing bootstrap obtains that full file; CMake installs it beside
-THIRD_PARTY_NOTICES.md. The BSD label summarizes those terms and does not replace
-the actual notice. See [dependency provenance](../THIRD_PARTY_NOTICES.md).
+The pinned LIBSVM
+[COPYRIGHT](https://github.com/cjlin1/libsvm/blob/6b907139084abf2da4d6d3cb10dc3b7eaffa2fbb/COPYRIGHT)
+is obtained by the source bootstrap and installed beside THIRD_PARTY_NOTICES.md.
+The project license does not replace any upstream terms. See
+[third-party notices](../THIRD_PARTY_NOTICES.md) for provenance and the binding notice.
 
-## Future packages
-
-A binary package needs explicit project licensing and all applicable bundled
-third-party notices. A Python extension computing kernels need not bundle LIBSVM:
-scikit-learn supplies its own solver. A package that ships the upstream CLI tools
-must also carry LIBSVM's complete notice. Future binding dependencies need their
-own provenance and notice review when introduced.
-
-Do not advertise PyPI availability, a supported wheel platform, or a release
-license until the corresponding artifact and terms have been verified.
+The release-verification script checks the project license, binding notice, and
+native extension inside the actual wheel. The C++ installation tests verify the
+upstream LIBSVM notice. Recheck these contents when changing dependencies or
+adding another bundled component.

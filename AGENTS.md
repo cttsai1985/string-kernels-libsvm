@@ -24,4 +24,5 @@
 - Finish authorized work through issue, PR, current-commit CI, and merge to
   `main`. Close the issue with evidence and remove the worktree after merge.
   Never use `git reset --hard` or `git stash` in the operator's working tree.
-- Retain upstream notices. Do not assign the historical project a new license.
+- Retain upstream notices. Project-owned code uses BSD-3-Clause, selected by the owner on 2026-11-16.
+  Preserve third-party license terms separately.

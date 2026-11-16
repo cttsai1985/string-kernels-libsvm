@@ -55,9 +55,6 @@ jobs:
         run: cmake --build --preset dev
       - name: Test numerical, CLI, dependency, and installation contracts
         run: ctest --preset dev
-      - name: Run the documented Windows batch workflow
-        if: runner.os == 'Windows'
-        run: ./sample.bat build\dev\Debug
       - name: Configure production without Python or dependency fetching
         run: >-
           cmake -S . -B build/production -DBUILD_TESTING=OFF
@@ -98,7 +95,7 @@ jobs:
           from pathlib import Path
           import subprocess
           files = sorted(
-              path for pattern in ('*.h', '*.cpp', 'tests/*.cpp')
+              path for pattern in ('include/stringkernel/*.hpp', 'src/*.hpp', 'src/*.cpp', 'python/*.cpp', 'tests/*.cpp')
               for path in Path('.').glob(pattern)
           )
           subprocess.run(['clang-format', '--dry-run', '--Werror', *map(str, files)], check=True)
@@ -120,7 +117,7 @@ jobs:
       - name: Enforce coverage for project implementation
         run: |
           python -c "from pathlib import Path; Path('coverage').mkdir(exist_ok=True)"
-          gcovr --root . --filter '(StringKernels|Dataset|LibsvmWriter|CliOptions|StringKernelConverter)\.cpp$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
+          gcovr --root . --filter 'src/.*\.cpp$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:

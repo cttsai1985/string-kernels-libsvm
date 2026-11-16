@@ -40,3 +40,8 @@ __pycache__/
 # Verified dependency bootstrap output
 /third_party/libsvm/
 /third_party/.libsvm-fetch-*/
+
+# Python distribution output
+/dist/
+/.pytest_cache/
+/*.egg-info/

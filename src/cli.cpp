@@ -1,6 +1,6 @@
-#include "CliOptions.h"
-#include "Dataset.h"
-#include "LibsvmWriter.h"
+#include "cli_options.hpp"
+#include "stringkernel/dataset.hpp"
+#include "stringkernel/libsvm_writer.hpp"
 #include "svm.h"
 
 #include <cstdlib>
@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
         if (options.help) {
             std::cout << stringkernel::usage_text();
         } else if (options.version) {
-            std::cout << "StringKernel4LIBSVM " << STRINGKERNEL_VERSION << " (LIBSVM "
+            std::cout << "string-kernels " << STRINGKERNEL_VERSION << " (LIBSVM "
                       << LIBSVM_VERSION / 100 << '.' << LIBSVM_VERSION % 100 << ")\n";
         } else {
             const auto training = stringkernel::load_dataset(options.train);
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
         }
         return EXIT_SUCCESS;
     } catch (const std::exception& error) {
-        std::cerr << "StringKernelConverter: " << error.what() << "\nUse --help for usage.\n";
+        std::cerr << "string-kernels: " << error.what() << "\nUse --help for usage.\n";
         return EXIT_FAILURE;
     }
 }

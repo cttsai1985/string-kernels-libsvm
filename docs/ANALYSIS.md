@@ -51,7 +51,7 @@ repository root:
 
 ```sh
 python3 scripts/analyze_separation.py \
-  --converter build/dev/StringKernelConverter \
+  --converter build/dev/string-kernels \
   --trainer build/dev/svm-train \
   --predictor build/dev/svm-predict \
   --output-dir build/separation-analysis

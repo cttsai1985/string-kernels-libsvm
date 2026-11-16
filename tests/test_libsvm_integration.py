@@ -197,13 +197,13 @@ class LibsvmIntegrationTests(unittest.TestCase):
         self.run_program(self.options.cmake, "--install", self.options.build,
                          "--prefix", prefix, "--config", self.options.config)
         extension = self.options.converter.suffix
-        converter = prefix / "bin" / f"StringKernelConverter{extension}"
+        converter = prefix / "bin" / f"string-kernels{extension}"
         trainer = prefix / "bin" / f"svm-train{extension}"
         predictor = prefix / "bin" / f"svm-predict{extension}"
         for executable in [converter, trainer, predictor]:
             self.assertTrue(executable.is_file(), executable)
-        for name in ["StringKernels.h", "Dataset.h", "LibsvmWriter.h"]:
-            self.assertTrue((prefix / "include" / "StringKernel4LIBSVM" / name).is_file())
+        for name in ["kernels.hpp", "dataset.hpp", "libsvm_writer.hpp"]:
+            self.assertTrue((prefix / "include" / "stringkernel" / name).is_file())
         self.assertTrue(list(prefix.rglob("libstringkernel.a")) or
                         list(prefix.rglob("stringkernel.lib")))
         copyright_file = prefix / "share" / "StringKernel4LIBSVM" / "COPYRIGHT"
@@ -211,7 +211,7 @@ class LibsvmIntegrationTests(unittest.TestCase):
                          (self.options.source / "third_party" / "libsvm" / "COPYRIGHT").read_bytes())
         self.assertTrue((copyright_file.parent / "THIRD_PARTY_NOTICES.md").is_file())
         self.assertEqual(self.run_program(converter, "--version").stdout,
-                         "StringKernel4LIBSVM 1.0.0 (LIBSVM 3.37)\n")
+                         "string-kernels 1.0.0 (LIBSVM 3.37)\n")
         train_matrix = self.directory / "installed.train"
         test_matrix = self.directory / "installed.test"
         model = self.directory / "installed.model"

@@ -26,8 +26,8 @@ python3 scripts/fetch_libsvm.py
 cmake -S . -B build/release -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release --config Release
 mkdir -p build/example
-./build/release/StringKernelConverter -train examples/regression/train_sequences.tsv -k 5 > build/example/train.kernel
-./build/release/StringKernelConverter -train examples/regression/train_sequences.tsv -test examples/regression/test_sequences.tsv -k 5 > build/example/test.kernel
+./build/release/string-kernels -train examples/regression/train_sequences.tsv -k 5 > build/example/train.kernel
+./build/release/string-kernels -train examples/regression/train_sequences.tsv -test examples/regression/test_sequences.tsv -k 5 > build/example/test.kernel
 ./build/release/svm-train -s 3 -t 4 build/example/train.kernel build/example/model
 ./build/release/svm-predict build/example/test.kernel build/example/model build/example/predictions.txt
 ```
@@ -40,22 +40,10 @@ The last command writes one prediction per test record to
 `build/example/predictions.txt`. The supplied labels are continuous, so the example
 uses epsilon-SVR with `-s 3`. LIBSVM's `-t 4` selects a precomputed kernel.
 
-On Windows, open a Visual Studio developer command prompt with a C++17 toolchain.
-For Visual Studio 2026, use CMake 4.2 or newer.
-
-```bat
-python scripts/fetch_libsvm.py
-cmake -S . -B build/release -DBUILD_TESTING=OFF
-cmake --build build/release --config Release
-sample.bat build\release\Release
-```
-
-`sample.bat` writes the same artifacts under `build\example` and stops on errors.
-For a generator that puts executables directly in `build\release`, pass that
-directory instead. In PowerShell, invoke the batch file as `./sample.bat`. Use
-this batch file or `cmd /c` for native output redirection on older PowerShell
-versions. Their default `>` encoding can produce UTF-16 text that LIBSVM cannot
-read.
+For compiled Python packages on Linux, macOS, and Windows, use the
+[Python installation guide](PYTHON.md). Contributors building the C++ tools on
+Windows use the same CMake configure/build/install commands from a Visual Studio
+developer shell; see [development](DEVELOPMENT.md). There is no batch-file workflow.
 
 ## Convert your sequences
 
@@ -76,7 +64,7 @@ both conversions. A test matrix always has one column per original training reco
 Keep all output columns, including zero values and the `0:serial` field. Do not
 run `svm-scale` on these matrices as though they were ordinary feature vectors.
 
-`StringKernelConverter --help` lists the options. The converter's stable numeric
+`string-kernels --help` lists the options. The converter's stable numeric
 IDs are `-t 0` positional, `-t 1` weighted degree, `-t 2` spectrum, and `-t 3`
 subsequence. You can also use the readable `--kernel` names. These type numbers
 belong to the converter. The bundled `svm-train` needs `-t 4` for any converted
@@ -114,8 +102,8 @@ positive pair shares `AC` and the negative pair shares `GG`. Held-out `ACC` and
 
 ```sh
 mkdir -p build/string-kernel-example
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv --kernel spectrum -k 2 > build/string-kernel-example/spectrum.train
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv -test examples/string-kernels/spectrum-test.tsv --kernel spectrum -k 2 > build/string-kernel-example/spectrum.test
+./build/release/string-kernels -train examples/string-kernels/spectrum-train.tsv --kernel spectrum -k 2 > build/string-kernel-example/spectrum.train
+./build/release/string-kernels -train examples/string-kernels/spectrum-train.tsv -test examples/string-kernels/spectrum-test.tsv --kernel spectrum -k 2 > build/string-kernel-example/spectrum.test
 ./build/release/svm-train -q -t 4 build/string-kernel-example/spectrum.train build/string-kernel-example/spectrum.model
 ./build/release/svm-predict build/string-kernel-example/spectrum.test build/string-kernel-example/spectrum.model build/string-kernel-example/spectrum.predictions
 ```
@@ -127,8 +115,8 @@ For gapped matches, run the same fixture with the fixed-length subsequence
 kernel and a gap-decay value. Keep the same kernel settings for both matrices:
 
 ```sh
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv --kernel subsequence -k 2 --decay 0.5 > build/string-kernel-example/subsequence.train
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv -test examples/string-kernels/spectrum-test.tsv --kernel subsequence -k 2 --decay 0.5 > build/string-kernel-example/subsequence.test
+./build/release/string-kernels -train examples/string-kernels/spectrum-train.tsv --kernel subsequence -k 2 --decay 0.5 > build/string-kernel-example/subsequence.train
+./build/release/string-kernels -train examples/string-kernels/spectrum-train.tsv -test examples/string-kernels/spectrum-test.tsv --kernel subsequence -k 2 --decay 0.5 > build/string-kernel-example/subsequence.test
 ./build/release/svm-train -q -t 4 build/string-kernel-example/subsequence.train build/string-kernel-example/subsequence.model
 ./build/release/svm-predict build/string-kernel-example/subsequence.test build/string-kernel-example/subsequence.model build/string-kernel-example/subsequence.predictions
 ```
@@ -167,5 +155,4 @@ The modernized C++ API and stricter input rules are intentional changes. See
 remains unsupported historical source and is excluded from the build.
 
 LIBSVM's license and exact source pin are in
-[third-party notices](../THIRD_PARTY_NOTICES.md). This modernization does not assign
-a license to the historical project.
+[third-party notices](../THIRD_PARTY_NOTICES.md). Project-owned code is BSD-3-Clause; upstream terms remain separate.

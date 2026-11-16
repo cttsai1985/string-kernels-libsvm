@@ -8,7 +8,7 @@ programs. A project-owned C++17 library handles sequence mathematics and data
 formatting. The solver remains unmodified. This boundary preserves the original
 project purpose and avoids a private solver fork.
 
-`StringKernelConverter -train train.txt [-test target.txt] [-k K] [-t type]`
+`string-kernels -train train.txt [-test target.txt] [-k K] [-t type]`
 continues to work. Default type is weighted degree (`1`), default degree is `5`;
 type `0` is equal-length positional similarity, `2` is spectrum and `3` is
 subsequence. Named selection is also supported with `--kernel`; `--decay` is
@@ -193,8 +193,8 @@ configuration with `-DBUILD_TESTING=OFF` needs neither Python nor network access
 
 Install the converter, official trainer/predictor, project library/public headers,
 and upstream notices. An integration test installs into a temporary prefix and
-runs that installation. Keep project license choice explicit; this work does not
-silently assign a license to the historical project.
+runs that installation. Project-owned code uses the owner-selected BSD-3-Clause license; preserve
+upstream dependency terms separately.
 
 ## Tests and delivery gates
 
@@ -246,6 +246,9 @@ Restoration needs a paired-sequence data contract, orthogonal-array dependency
 provenance, fixed-fold ownership, and a new public-API-only solver integration.
 It is not made buildable by merely supplying upstream `svm.h`.
 
-Python bindings, FASTA parsing, tuning/cross-validation, automatic alignment,
-parallel execution, and model-quality research remain separately scoped features.
-Their absence does not change the supported converter-to-official-solver workflow.
+Python bindings now expose the existing kernels as NumPy matrices. A fold-local
+scikit-learn transformer uses the public precomputed-kernel API; sklearn supplies
+its solver. Python builds disable optional CLI targets, require no LIBSVM cache,
+and install only the extension, Python modules, and notices. See [Python](PYTHON.md).
+FASTA parsing, automatic alignment, native parallel execution, and model-quality
+research remain separately scoped features.

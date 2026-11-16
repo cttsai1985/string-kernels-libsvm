@@ -89,12 +89,12 @@ kernel also has substantial per-pair computation and memory costs.
 | --- | --- |
 | Build the existing tools and run classification or regression | [Command-line quickstart](docs/QUICKSTART.md). |
 | Understand formulas, parameters, and matrix layout | [Kernel reference](docs/KERNELS.md). |
-| Use matrices with scikit-learn | [Interoperability below](#scikit-learn-interoperability). |
+| Install a compiled package and use scikit-learn | [Python guide](docs/PYTHON.md) and [release downloads](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.0.0). |
 | Develop, test, or install the C++ library | [Development](docs/DEVELOPMENT.md) and [compatibility](docs/COMPATIBILITY.md). |
 
 Build-system commands and generated file paths belong in the quickstart rather
-than in this conceptual overview. The installed-command naming review is tracked
-in [issue #16](https://github.com/cttsai1985/string-kernels-libsvm/issues/16).
+than in this conceptual overview. The installed C++ command is `string-kernels`. The Python distribution is
+`string-kernels-libsvm`, imported as `stringkernels`.
 
 ### scikit-learn interoperability
 
@@ -113,11 +113,23 @@ numeric array of similarities, with labels supplied separately: training shape
 label or serial column as kernel values. Cross-validation must preserve each
 fold's training-reference columns.
 
-**Distribution status:** this repository currently provides C++ source and the
-command-line workflow. Native Python bindings, a scikit-learn transformer, and
-prebuilt wheels are planned in the [implementation plan](implementation_plan.md);
-there is no supported `pip install` workflow yet. Installation instructions will
-be added alongside verified package artifacts.
+The compiled Python package exposes `pairwise` for NumPy matrices and a
+`StringKernel` transformer for scikit-learn Pipelines. The transformer keeps
+training references within each cross-validation fold:
+
+```python
+from sklearn.pipeline import make_pipeline
+from sklearn.svm import SVC
+from stringkernels.sklearn import StringKernel
+
+model = make_pipeline(StringKernel(kernel="spectrum", degree=2), SVC(kernel="precomputed"))
+model.fit(["ACG", "ACT", "GGA", "GGT"], [1, 1, -1, -1])
+model.predict(["ACC", "GGC"])  # array([1, -1])
+```
+
+Use `SVR(kernel="precomputed")` for regression. See the [Python guide](docs/PYTHON.md)
+for compiled-wheel installation, the matrix API, tuning, and resource limits.
+The release is distributed through GitHub Releases; PyPI publication is separate.
 
 ## References and attribution
 
@@ -151,11 +163,9 @@ assigned by this README.
 
 ## Licensing
 
-**Project-owned code currently has no declared license.** The presence of
-permissively licensed dependencies does not grant their terms to this code.
-Project terms must be resolved with the rights holder before a licensed package
-release. See [license status and distribution requirements](docs/LICENSING.md).
+Project-owned code is licensed under **[BSD-3-Clause](LICENSE)**. Binary packages
+include the project license and applicable binding notices. NumPy, scikit-learn,
+and upstream tools retain their own terms; see [licensing](docs/LICENSING.md) and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-LIBSVM's BSD-3-Clause terms and Catch2's BSL-1.0 terms remain separate; exact
-versions and upstream notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 The unsupported historical analyzer remains outside the supported build.

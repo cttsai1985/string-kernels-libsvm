@@ -6,17 +6,19 @@ The repository is named `string-kernels-libsvm`; its documentation title is
 **String Kernels for LIBSVM**. This names the supported string kernels and their
 LIBSVM precomputed-matrix integration.
 
-The repository rename preserves the existing `StringKernelConverter` command,
-`stringkernel` C++ namespace and targets, `StringKernel4LIBSVM` installation
-paths, and version output documented below. Existing builds and consumers keep
-their established identifiers.
+The first packaged release adopts the installed command `string-kernels` and
+namespaced public headers under `include/stringkernel/`. The former mixed-case
+executable and flat header names are intentionally replaced; update scripts and
+C++ includes to the names below. Kernel mathematics, option meanings, and
+reference-column ordering remain unchanged. The historical CMake project ID and
+`stringkernel::stringkernel` target remain stable.
 
 ## Supported command line
 
 ```text
-StringKernelConverter -train FILE [-test FILE] [-k K] [-t TYPE | --kernel NAME] [--decay LAMBDA]
-StringKernelConverter --help
-StringKernelConverter --version
+string-kernels -train FILE [-test FILE] [-k K] [-t TYPE | --kernel NAME] [--decay LAMBDA]
+string-kernels --help
+string-kernels --version
 ```
 
 | Option | Contract |
@@ -35,7 +37,7 @@ malformed parameters, invalid degrees/decay, and unsupported kernel types are er
 only matrix data to stdout. Diagnostics go to stderr, with a nonzero exit status.
 Paths containing spaces are supported when quoted by the calling shell.
 
-The version string is `StringKernel4LIBSVM 1.0.0 (LIBSVM 3.37)`. Version `1.0.0`
+The version string is `string-kernels 1.0.0 (LIBSVM 3.37)`. Version `1.0.0`
 is the modernization's first explicit project version. It does not imply
 historical release continuity.
 
@@ -69,7 +71,7 @@ The old pointer-owning API, global dataset state, mutable self-kernel caches, an
 unscoped names are replaced. This is an intentional source API change. There is
 no adapter for old constructors or internal fields.
 
-Supported headers are `StringKernels.h`, `Dataset.h`, and `LibsvmWriter.h`.
+Supported headers are `stringkernel/kernels.hpp`, `stringkernel/dataset.hpp`, and `stringkernel/libsvm_writer.hpp`.
 Their declarations live in `namespace stringkernel`. `Dataset` is a vector of
 value-owned `Sample` records. Each calculation receives its kernel configuration
 explicitly. See the [library example](DEVELOPMENT.md#use-the-c-library).
@@ -90,5 +92,6 @@ fold ownership, and supported public solver APIs. Adding the current `svm.h`
 alone does not restore the analyzer. The dormant RBF-over-similarity path is also
 outside the supported converter and library API.
 
-Python bindings, FASTA parsing, automatic alignment, parallel execution, and
-model tuning are outside this modernization.
+Python bindings and the scikit-learn transformer are described in [the Python
+guide](PYTHON.md). FASTA parsing, automatic alignment, native parallel execution,
+and automatic model tuning remain outside the package.

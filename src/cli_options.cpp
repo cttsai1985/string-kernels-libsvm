@@ -1,4 +1,4 @@
-#include "CliOptions.h"
+#include "cli_options.hpp"
 
 #include <charconv>
 #include <cmath>
@@ -127,10 +127,10 @@ Options parse_options(const std::vector<std::string_view>& arguments) {
 }
 
 std::string_view usage_text() {
-    return "Usage: StringKernelConverter -train FILE [-test FILE] [-k K] [-t TYPE | --kernel NAME] "
+    return "Usage: string-kernels -train FILE [-test FILE] [-k K] [-t TYPE | --kernel NAME] "
            "[--decay LAMBDA]\n"
-           "       StringKernelConverter --help\n"
-           "       StringKernelConverter --version\n"
+           "       string-kernels --help\n"
+           "       string-kernels --version\n"
            "\n"
            "Convert sequence/label records to LIBSVM precomputed kernels.\n"
            "  -train FILE  Training reference sequences and labels (required)\n"
