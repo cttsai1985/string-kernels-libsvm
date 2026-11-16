@@ -72,3 +72,10 @@ def test_transformer_defaults_and_length_validation():
         StringKernel(kernel='positional').fit(['AC', 'A'])
     with pytest.raises(ValueError):
         StringKernel().fit(TRAIN, [1])
+
+
+def test_fit_transform_materializes_a_generator_once():
+    transformer = StringKernel(kernel='spectrum', degree=2)
+    actual = transformer.fit_transform(iter(TRAIN), LABELS)
+    np.testing.assert_array_equal(actual, pairwise(TRAIN, kernel='spectrum', degree=2))
+    assert transformer.reference_ == tuple(TRAIN)

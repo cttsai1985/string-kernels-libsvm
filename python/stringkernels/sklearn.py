@@ -28,6 +28,11 @@ class StringKernel(TransformerMixin, BaseEstimator):
         self.reference_ = reference
         return self
 
+    def fit_transform(self, X, y=None):
+        """Materialize a training iterable once and return its Gram matrix."""
+        self.fit(X, y)
+        return self.transform(self.reference_)
+
     def transform(self, X):
         """Return similarities with one column per fitted training reference."""
         check_is_fitted(self, 'reference_')

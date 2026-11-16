@@ -225,3 +225,12 @@ The Python build creates an sdist and compiles its wheel without the LIBSVM
 bootstrap. Installed-artifact and cross-platform results are recorded in the
 release and issue closeout, including the exact tested commit. The verifier is
 `python scripts/verify_package.py --dist build/distributions`.
+
+MEASURED locally: 50/50 CTest cases pass after relocation; 38/38 installed-wheel
+Python tests pass. Independent review found an iterator-consumption bug in the
+inherited sklearn `fit_transform`; its new regression failed against the first
+installed wheel, then passed after fitting once and transforming saved references.
+The package's wheel/sdist build does not include the LIBSVM cache. A fresh outside-
+checkout install passed the initial 37-test suite; hosted release-wheel verification
+also includes the iterator regression. These fixtures prove implementation behavior,
+not real-world predictive accuracy.
