@@ -22,6 +22,6 @@
   predictions before claiming success. Label measurements `MEASURED` and estimates
   `ESTIMATED`. Do not infer numerical correctness from compilation alone.
 - Finish authorized work through issue, PR, current-commit CI, and merge to
-  `master`. Close the issue with evidence and remove the worktree after merge.
+  `main`. Close the issue with evidence and remove the worktree after merge.
   Never use `git reset --hard` or `git stash` in the operator's working tree.
 - Retain upstream notices. Do not assign the historical project a new license.

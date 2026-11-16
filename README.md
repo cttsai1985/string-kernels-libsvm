@@ -1,171 +1,161 @@
 # String Kernels for LIBSVM
 
-Compare labeled sequences, such as DNA fragments or short words. This tool turns
-their similarities into a table for LIBSVM classification or regression: each
-row represents a target sequence, and each column represents a training reference.
+**Support vector learning directly from sequences.** This project computes
+normalized string-kernel similarities for classification and regression, with a
+C++17 kernel library and unmodified LIBSVM training and prediction tools.
 
-String Kernels for LIBSVM converts labeled sequences into normalized string-kernel
-matrices for LIBSVM. It includes the converter, a C++17 kernel library, and the
-unmodified LIBSVM 3.37 training and prediction programs.
+A string kernel compares sequences through shared patterns rather than requiring
+a manually constructed feature table. Different kernels encode different
+assumptions: whether a pattern's position matters, whether it must be contiguous,
+and whether gaps should reduce its contribution. Those assumptions should follow
+the scientific question and the way the sequences were collected.
 
-The default is the weighted-degree string kernel with degree `5`. DSK and WDSK
-compare matches at the same positions; spectrum and subsequence kernels do not
-require alignment. See [kernel definitions](docs/KERNELS.md).
+## How it works
 
-## Build and run the supplied regression example
-
-Use a C++17 compiler, CMake 3.25 or newer, and Python 3.9 or newer for the
-initial dependency bootstrap. The script downloads the six required official
-LIBSVM files at an exact commit and verifies their SHA-256 digests. After that
-step, production configuration and builds need neither Python nor network access.
-
-On Linux or macOS, run these commands from the repository directory:
-
-```sh
-python3 scripts/fetch_libsvm.py
-cmake -S . -B build/release -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build build/release --config Release
-mkdir -p build/example
-./build/release/StringKernelConverter -train examples/regression/train_sequences.tsv -k 5 > build/example/train.kernel
-./build/release/StringKernelConverter -train examples/regression/train_sequences.tsv -test examples/regression/test_sequences.tsv -k 5 > build/example/test.kernel
-./build/release/svm-train -s 3 -t 4 build/example/train.kernel build/example/model
-./build/release/svm-predict build/example/test.kernel build/example/model build/example/predictions.txt
-```
-
-Dependency sources are cached under ignored `third_party/libsvm/`; rerunning the
-bootstrap verifies and reuses a complete cache offline. See [offline setup and
-recovery](docs/DEVELOPMENT.md#bootstrap-libsvm-and-work-offline).
-
-The last command writes one prediction per test record to
-`build/example/predictions.txt`. The supplied labels are continuous, so the example
-uses epsilon-SVR with `-s 3`. LIBSVM's `-t 4` selects a precomputed kernel.
-
-On Windows, open a Visual Studio developer command prompt with a C++17 toolchain.
-For Visual Studio 2026, use CMake 4.2 or newer.
-
-```bat
-python scripts/fetch_libsvm.py
-cmake -S . -B build/release -DBUILD_TESTING=OFF
-cmake --build build/release --config Release
-sample.bat build\release\Release
-```
-
-`sample.bat` writes the same artifacts under `build\example` and stops on errors.
-For a generator that puts executables directly in `build\release`, pass that
-directory instead. In PowerShell, invoke the batch file as `./sample.bat`. Use
-this batch file or `cmd /c` for native output redirection on older PowerShell
-versions. Their default `>` encoding can produce UTF-16 text that LIBSVM cannot
-read.
-
-## Convert your sequences
-
-Each nonblank line contains a sequence token and a finite numeric label:
-
-```text
-ACDE 1
-ACDF -1
-```
-
-Separate fields with spaces or tabs. Sequences are case-sensitive byte strings.
-The parser accepts LF, CRLF, and a final line without a newline. It rejects empty
-datasets, missing labels, extra fields, and invalid numbers with a source and
-line diagnostic. Save text without a byte-order mark.
-
-Use the same training file, record order, kernel type, and parameter values for
-both conversions. A test matrix always has one column per original training record.
-Keep all output columns, including zero values and the `0:serial` field. Do not
-run `svm-scale` on these matrices as though they were ordinary feature vectors.
-
-`StringKernelConverter --help` lists the options. The converter's stable numeric
-IDs are `-t 0` positional, `-t 1` weighted degree, `-t 2` spectrum, and `-t 3`
-subsequence. You can also use the readable `--kernel` names. These type numbers
-belong to the converter. The bundled `svm-train` needs `-t 4` for any converted
-matrix.
-
-## Choose a kernel and run a small classification example
-
-A kernel turns each pair of sequences into a similarity score. The converter
-writes those scores as a Gram matrix; LIBSVM learns a model from the labeled
-training rows and uses the test-to-training scores to predict test labels.
-Every input row, including a test row, needs a label field. If a test label is
-unknown, use `0`; LIBSVM prediction ignores that field.
+For a feature map $\phi$, a kernel is the inner product
+$k(x,z)=\langle\phi(x),\phi(z)\rangle$. Here, the features describe matching
+symbols, substrings, or subsequences. The library computes the similarity without
+requiring users to enumerate the full feature space.
 
 ```mermaid
-flowchart LR
-    A[Sequence and label rows] --> B[Choose converter kernel]
-    B --> C[Training and test Gram matrices]
-    C --> D[LIBSVM model]
-    D --> E[Test predictions]
+flowchart TD
+    A[Sequences and training labels] --> B{What should a match preserve?}
+    B -->|Position| C[Positional or weighted-degree kernel]
+    B -->|Contiguous pattern anywhere| D[Spectrum kernel]
+    B -->|Symbol order with gaps| E[Subsequence kernel]
+    C --> F[Normalized pairwise similarities]
+    D --> F
+    E --> F
+    F --> G[Training vs training matrix]
+    F --> H[New sequences vs original training matrix]
+    G --> I[Fit a support vector model]
+    I --> J[Predict labels or continuous values]
+    H --> J
 ```
 
-Each kernel measures a different kind of match:
+Training produces a square Gram matrix. Prediction uses a rectangular matrix:
+each row describes a new sequence, and each column corresponds to an original
+training sequence **in the same order used during fitting**. The string kernel
+defines similarity; LIBSVM learns the decision function from that matrix [4].
 
-| Kernel | What it compares | Choose it when |
+## Which kernel fits the question?
+
+| Method | Features and assumptions | Reference |
 | --- | --- | --- |
-| `positional` / `-t 0` | Same byte at the same position | Inputs have equal lengths and are already aligned. |
-| `weighted-degree` / `-t 1` | Same-position substrings up to `-k` bytes | Aligned local matches matter at several lengths. This remains the default. |
-| `spectrum` / `-t 2` | Exact contiguous `-k`-mers, wherever they occur | A short exact pattern should still match after it moves. |
-| `subsequence` / `-t 3` | Ordered `-k`-byte patterns, allowing gaps | Preserve a pattern match when insertions create gaps; expect more computation. |
+| **Positional similarity** | Matching symbols at corresponding positions. Requires aligned sequences of equal length. The historical name `DSK` denotes this simple indicator-feature baseline, not edit distance. | Definition in [kernel reference](docs/KERNELS.md#positional-similarity-converter-type-0). |
+| **Weighted degree** | Exact substrings at corresponding positions, combining orders up to a chosen degree. Suitable when alignment carries meaning. Default: degree `5`. | Aligned weighted-degree formulation in Sonnenburg et al. [1], §3.1.1, Eq. (14), p. 1542. |
+| **Spectrum** | Counts of exact, contiguous length-$k$ substrings, independent of position. A motif can move while retaining similarity. | Leslie, Eskin, and Noble [2]. |
+| **Subsequence** | Ordered length-$k$ patterns, including gapped occurrences. A decay parameter discounts gaps. More expensive than contiguous matching. | Lodhi et al. [3]. |
 
-The example files contain four labeled training strings and two held-out strings:
-`ACG`/`ACT` are positive; `GGA`/`GGT` are negative. At spectrum `k=2`, the
-positive pair shares `AC` and the negative pair shares `GG`. Held-out `ACC` and
-`GGC` share those corresponding 2-mers. Run the spectrum example:
+For example, `ACG` and `GAC` share the contiguous pattern `AC` at different
+positions; the spectrum kernel captures that match. `ACG` and `AG` share the
+ordered pattern `AG` with a gap; the subsequence kernel captures it. Positional
+methods instead ask whether patterns occur at the same coordinates.
 
-```sh
-mkdir -p build/string-kernel-example
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv --kernel spectrum -k 2 > build/string-kernel-example/spectrum.train
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv -test examples/string-kernels/spectrum-test.tsv --kernel spectrum -k 2 > build/string-kernel-example/spectrum.test
-./build/release/svm-train -q -t 4 build/string-kernel-example/spectrum.train build/string-kernel-example/spectrum.model
-./build/release/svm-predict build/string-kernel-example/spectrum.test build/string-kernel-example/spectrum.model build/string-kernel-example/spectrum.predictions
-```
+Weighted-degree, spectrum, and subsequence kernels use their feature-map
+definitions and cosine normalization:
 
-The predictions for these two held-out rows are `1` and `-1`. The example is a
-small correctness demonstration, not a claim about accuracy on other data.
+$$K(x,z)=\frac{k(x,z)}{\sqrt{k(x,x)\,k(z,z)}}.$$
 
-For gapped matches, run the same fixture with the fixed-length subsequence
-kernel and a gap-decay value. Keep the same kernel settings for both matrices:
+A zero self-kernel yields zero. Positional similarity is already normalized by
+sequence length. The [mathematical reference](docs/KERNELS.md) specifies weights,
+normalization, edge cases, and analytical computational costs. It also identifies
+this project's unequal-length weighted-degree extension and the subsequence
+implementation's normalization-equivalent gap-only weighting; neither is a claim
+that the original papers used precisely this implementation.
 
-```sh
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv --kernel subsequence -k 2 --decay 0.5 > build/string-kernel-example/subsequence.train
-./build/release/StringKernelConverter -train examples/string-kernels/spectrum-train.tsv -test examples/string-kernels/spectrum-test.tsv --kernel subsequence -k 2 --decay 0.5 > build/string-kernel-example/subsequence.test
-./build/release/svm-train -q -t 4 build/string-kernel-example/subsequence.train build/string-kernel-example/subsequence.model
-./build/release/svm-predict build/string-kernel-example/subsequence.test build/string-kernel-example/subsequence.model build/string-kernel-example/subsequence.predictions
-```
+## What the examples establish
 
-As a tiny feature example, `ACG` and `AG` share the length-2 ordered
-subsequence `AG` with a gap. With decay `0.5`, their normalized subsequence
-kernel is `1/3`; their spectrum `k=2` maps are `{AC, CG}` and `{AG}`, so they
-share no features and the score is zero. See [the formulas, parameter meanings,
-and analytical costs](docs/KERNELS.md).
+The [visual walkthrough](docs/ANALYSIS.md) compares aligned, moved, and gapped
+motifs using similarity matrices and actual LIBSVM predictions.
 
-For a visual walkthrough of aligned, moved, and gapped motifs across three tiny
-datasets, see the [kernel separation analysis](docs/ANALYSIS.md). It includes
-similarity heatmaps and predictions from the actual LIBSVM tools; the examples
-are intentionally constructed and do not estimate real-world accuracy.
+![Similarities for constructed sequence examples](docs/analysis/similarities.svg)
 
-These examples still use the repository's input format: one case-sensitive byte
-token and one finite label per line. Inputs are not parsed as FASTA, and the
-converter does not choose an alphabet, align records, tune parameters, or run
-cross-validation. All conversion commands for one model must use the same
-converter kernel and parameter values, and the test matrix must keep the original
-training row order. The converter's `--kernel` chooses sequence similarity;
-LIBSVM's separate `svm-train -t 4` selects its precomputed-matrix mode. A `k`
-larger than a sequence length is valid and gives that sequence an empty feature
-map for spectrum or subsequence. WDSK still includes all available substring
-orders up to the sequence length, and DSK does not use `k` in its score.
+These deliberately constructed examples check whether the implementations reflect
+their intended feature definitions. They do not establish predictive accuracy on
+biological sequences or text. A research application still needs an appropriate
+split strategy, training-only parameter selection, and independent evaluation.
+Related or duplicate sequences across splits can make performance misleading.
 
-## Develop and install
+Inputs are case-sensitive byte strings. The command-line reader expects a
+sequence token and numeric label per record. It does not parse FASTA, infer an
+alphabet, align sequences, or normalize Unicode. Dense Gram matrices grow
+quadratically with the number of training examples; the gapped subsequence
+kernel also has substantial per-pair computation and memory costs.
 
-For tests, TDD, sanitizers, coverage, offline test dependencies, installation, and
-the library API, see [development instructions](docs/DEVELOPMENT.md) and
-[contribution requirements](CONTRIBUTING.md).
+## Using the project
 
-The modernized C++ API and stricter input rules are intentional changes. See
-[compatibility](docs/COMPATIBILITY.md), [design](docs/DESIGN.md), and
-[validation evidence](docs/VALIDATION.md). The incomplete `legacy/paired_sequence_analyzer.cpp`
-remains unsupported historical source and is excluded from the build.
+| Goal | Guide |
+| --- | --- |
+| Build the existing tools and run classification or regression | [Command-line quickstart](docs/QUICKSTART.md). |
+| Understand formulas, parameters, and matrix layout | [Kernel reference](docs/KERNELS.md). |
+| Use matrices with scikit-learn | [Interoperability below](#scikit-learn-interoperability). |
+| Develop, test, or install the C++ library | [Development](docs/DEVELOPMENT.md) and [compatibility](docs/COMPATIBILITY.md). |
 
-LIBSVM's license and exact source pin are in
-[third-party notices](THIRD_PARTY_NOTICES.md). This modernization does not assign
-a license to the historical project.
+Build-system commands and generated file paths belong in the quickstart rather
+than in this conceptual overview. The installed-command naming review is tracked
+in [issue #16](https://github.com/cttsai1985/string-kernels-libsvm/issues/16).
+
+### scikit-learn interoperability
+
+The integration boundary is a **precomputed kernel matrix**. Scikit-learn's
+[`SVC`](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html)
+and [`SVR`](https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html)
+accept these matrices through `kernel="precomputed"`. Their LIBSVM-based solvers
+can therefore use the similarities produced here without a solver modification.
+[`LinearSVC`](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html)
+uses LIBLINEAR and does not accept a precomputed-kernel option.
+
+The existing CLI writes LIBSVM text records containing a label and a `0:serial`
+field before the kernel entries. Scikit-learn instead expects only a dense
+numeric array of similarities, with labels supplied separately: training shape
+`(n_train, n_train)` and prediction shape `(n_new, n_train)`. Do not pass the
+label or serial column as kernel values. Cross-validation must preserve each
+fold's training-reference columns.
+
+**Distribution status:** this repository currently provides C++ source and the
+command-line workflow. Native Python bindings, a scikit-learn transformer, and
+prebuilt wheels are planned in the [implementation plan](implementation_plan.md);
+there is no supported `pip install` workflow yet. Installation instructions will
+be added alongside verified package artifacts.
+
+## References and attribution
+
+Cite the method actually used and the solver when reporting results. These
+references describe the methods; they do not imply endorsement of this project
+or transfer a software license. Machine-readable entries are in
+[REFERENCES.bib](REFERENCES.bib).
+
+1. S. Sonnenburg, G. Rätsch, C. Schäfer, and B. Schölkopf. **Large Scale Multiple
+   Kernel Learning.** *Journal of Machine Learning Research*, 7(57):1531–1565,
+   2006. Weighted-degree definition: §3.1.1, Eq. (14), p. 1542.
+   [Publisher](https://jmlr.org/papers/v7/sonnenburg06a.html).
+2. C. Leslie, E. Eskin, and W. S. Noble. **The Spectrum Kernel: A String Kernel
+   for SVM Protein Classification.** *Pacific Symposium on Biocomputing*,
+   7:564–575, 2002.
+   [Author-hosted paper](https://noble.gs.washington.edu/papers/spectrum.html).
+3. H. Lodhi, C. Saunders, J. Shawe-Taylor, N. Cristianini, and C. Watkins.
+   **Text Classification using String Kernels.** *Journal of Machine Learning
+   Research*, 2:419–444, 2002.
+   [Publisher](https://jmlr.org/papers/v2/lodhi02a.html).
+4. C.-C. Chang and C.-J. Lin. **LIBSVM: A Library for Support Vector Machines.**
+   *ACM Transactions on Intelligent Systems and Technology*, 2(3), Article 27,
+   2011. [DOI](https://doi.org/10.1145/1961189.1961199).
+5. F. Pedregosa et al. **Scikit-learn: Machine Learning in Python.** *Journal of
+   Machine Learning Research*, 12:2825–2830, 2011. Cite when using scikit-learn.
+   [Publisher](https://jmlr.org/papers/v12/pedregosa11a.html).
+
+For reproducibility, also record the project commit, kernel parameters,
+preprocessing, data partition, and solver version. No archival software DOI is
+assigned by this README.
+
+## Licensing
+
+**Project-owned code currently has no declared license.** The presence of
+permissively licensed dependencies does not grant their terms to this code.
+Project terms must be resolved with the rights holder before a licensed package
+release. See [license status and distribution requirements](docs/LICENSING.md).
+
+LIBSVM's BSD-3-Clause terms and Catch2's BSL-1.0 terms remain separate; exact
+versions and upstream notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The unsupported historical analyzer remains outside the supported build.
