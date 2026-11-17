@@ -3,12 +3,12 @@
 ## Install a compiled package
 
 Download a wheel matching your Python version and platform from
-[the v1.0.0 release](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.0.0).
+[the v1.0.1 release](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.0.1).
 Alternatively, let pip select the matching release wheel and install the optional
 scikit-learn dependency in one command:
 
 ```sh
-python -m pip install --only-binary=string-kernels-libsvm --find-links https://github.com/cttsai1985/string-kernels-libsvm/releases/expanded_assets/v1.0.0 "string-kernels-libsvm[sklearn]==1.0.0"
+python -m pip install --only-binary=string-kernels-libsvm --find-links https://github.com/cttsai1985/string-kernels-libsvm/releases/expanded_assets/v1.0.1 "string-kernels-libsvm[sklearn]==1.0.1"
 ```
 
 This is a GitHub Release installation, not a claim of PyPI publication. NumPy and

@@ -98,13 +98,13 @@ class DependencyPins(unittest.TestCase):
 
     def test_project_version_is_pinned(self):
         content = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
-        self.assertRegex(content, r"project\(StringKernel4LIBSVM\s+VERSION\s+1\.0\.0\b")
+        self.assertRegex(content, r"project\(StringKernel4LIBSVM\s+VERSION\s+1\.0\.1\b")
 
     def test_python_build_and_release_dependencies_are_pinned(self):
         project = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         for requirement in ("scikit-build-core==1.1.2", "pybind11==3.1.0",
                             "numpy>=1.23.5", "scikit-learn>=1.3", "numpy==2.2.6",
-                            "scikit-learn==1.7.2", "pytest==9.2.0"):
+                            "scikit-learn==1.7.2", "pytest==9.2.0", "strkernels==0.2.15", "threadpoolctl==3.8.0"):
             self.assertIn('"' + requirement + '"', project)
         self.assertIn('cmake.version = "==4.4.4"', project)
         self.assertIn('ninja.version = "==1.13.0"', project)

@@ -94,7 +94,7 @@ kernel also has substantial per-pair computation and memory costs.
 | --- | --- |
 | Build the existing tools and run classification or regression | [Command-line quickstart](docs/QUICKSTART.md). |
 | Understand formulas, parameters, and matrix layout | [Kernel reference](docs/KERNELS.md). |
-| Install a compiled package and use scikit-learn | [Python guide](docs/PYTHON.md) and [release downloads](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.0.0). |
+| Install a compiled package and use scikit-learn | [Python guide](docs/PYTHON.md) and [release downloads](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.0.1). |
 | Develop, test, or install the C++ library | [Development](docs/DEVELOPMENT.md) and [compatibility](docs/COMPATIBILITY.md). |
 
 Build-system commands and generated file paths belong in the quickstart rather
@@ -135,6 +135,25 @@ model.predict(["ACC", "GGC"])  # array([1, -1])
 Use `SVR(kernel="precomputed")` for regression. See the [Python guide](docs/PYTHON.md)
 for compiled-wheel installation, the matrix API, tuning, and resource limits.
 The release is distributed through GitHub Releases; PyPI publication is separate.
+
+## Performance benchmarks
+
+The compiled implementation prepares sequence features once per matrix call,
+reuses training-matrix symmetry in Python, and evaluates weighted degree with a
+linear scan of matching runs. **MEASURED** median matrix-construction times on
+one Linux/Threadripper host, using matching GCC Release builds:
+
+| Workload | v1.0.0 | v1.0.1 |
+| --- | --- | --- |
+| Protein WD training: 192 sequences, length 64, degree 5 | 2.916 ms | 1.370 ms |
+| Highly similar WD training: 48 sequences, length 192, degree 64 | 12.606 ms | 0.231 ms |
+| Exact-3 spectrum training: 128 sequences, length 128 | 89.833 ms | 8.183 ms |
+
+These are synthetic workloads and do not measure predictive accuracy or solver
+training. Smaller inputs and rectangular prediction matrices benefit less.
+See the [full benchmark report](docs/BENCHMARKS.md) for five-trial ranges, unchanged
+and slower cases, CLI timings, comparisons with one- and four-thread `strkernels`,
+raw results, and reproduction instructions.
 
 ## References and attribution
 

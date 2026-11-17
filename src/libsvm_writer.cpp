@@ -1,4 +1,5 @@
 #include "stringkernel/libsvm_writer.hpp"
+#include "kernel_evaluator.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -47,15 +48,6 @@ void validate_lengths(const Dataset& reference, const Dataset& target) {
     }
 }
 
-std::vector<double> self_values(const Dataset& data, const KernelConfig& config) {
-    std::vector<double> result;
-    result.reserve(data.size());
-    for (const auto& sample : data) {
-        result.push_back(self_kernel(sample.sequence, config));
-    }
-    return result;
-}
-
 void require_output(const std::ostream& output) {
     if (!output) {
         throw std::runtime_error("failed to write precomputed kernel output");
@@ -72,10 +64,17 @@ void write_precomputed(std::ostream& output, const Dataset& reference, const Dat
         validate_lengths(reference, target);
     }
     require_output(output);
-    const auto reference_self = self_values(reference, config);
-    const auto separate_self =
-        &reference != &target ? self_values(target, config) : std::vector<double>{};
-    const auto& target_self = &reference == &target ? reference_self : separate_self;
+    std::vector<std::string_view> reference_sequences;
+    std::vector<std::string_view> target_sequences;
+    reference_sequences.reserve(reference.size());
+    target_sequences.reserve(target.size());
+    for (const auto& sample : reference) {
+        reference_sequences.push_back(sample.sequence);
+    }
+    for (const auto& sample : target) {
+        target_sequences.push_back(sample.sequence);
+    }
+    const detail::KernelEvaluator evaluator(config, reference_sequences, target_sequences);
     std::ostringstream row;
     row.imbue(std::locale::classic());
     row << std::setprecision(std::numeric_limits<double>::max_digits10);
@@ -84,9 +83,7 @@ void write_precomputed(std::ostream& output, const Dataset& reference, const Dat
         row.clear();
         row << target[i].label << " 0:" << i + 1;
         for (std::size_t j = 0; j < reference.size(); ++j) {
-            const double value =
-                normalize_kernel(raw_kernel(target[i].sequence, reference[j].sequence, config),
-                                 target_self[i], reference_self[j]);
+            const double value = evaluator.value(i, j);
             row << ' ' << j + 1 << ':' << value;
         }
         output << row.str() << '\n';

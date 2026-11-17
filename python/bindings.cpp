@@ -1,3 +1,4 @@
+#include "kernel_evaluator.hpp"
 #include "stringkernel/kernels.hpp"
 
 #include <pybind11/numpy.h>
@@ -35,21 +36,24 @@ py::array_t<double> pairwise(const std::vector<std::string>& targets,
         {static_cast<py::ssize_t>(targets.size()), static_cast<py::ssize_t>(references.size())});
     auto* output = result.mutable_data();
     py::gil_scoped_release release;
-    std::vector<double> target_self;
-    std::vector<double> reference_self;
-    target_self.reserve(targets.size());
-    reference_self.reserve(references.size());
+    std::vector<std::string_view> target_sequences;
+    std::vector<std::string_view> reference_sequences;
     for (const auto& sequence : targets) {
-        target_self.push_back(stringkernel::self_kernel(sequence, config));
+        target_sequences.push_back(sequence);
     }
     for (const auto& sequence : references) {
-        reference_self.push_back(stringkernel::self_kernel(sequence, config));
+        reference_sequences.push_back(sequence);
     }
+    const stringkernel::detail::KernelEvaluator evaluator(config, reference_sequences,
+                                                          target_sequences);
     for (std::size_t row = 0; row < targets.size(); ++row) {
-        for (std::size_t column = 0; column < references.size(); ++column) {
-            output[row * references.size() + column] = stringkernel::normalize_kernel(
-                stringkernel::raw_kernel(targets[row], references[column], config),
-                target_self[row], reference_self[column]);
+        const auto columns = evaluator.symmetric() ? row + 1 : references.size();
+        for (std::size_t column = 0; column < columns; ++column) {
+            const auto value = evaluator.value(row, column);
+            output[row * references.size() + column] = value;
+            if (evaluator.symmetric()) {
+                output[column * references.size() + row] = value;
+            }
         }
     }
     return result;

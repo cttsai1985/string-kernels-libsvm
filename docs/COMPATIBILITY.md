@@ -37,7 +37,7 @@ malformed parameters, invalid degrees/decay, and unsupported kernel types are er
 only matrix data to stdout. Diagnostics go to stderr, with a nonzero exit status.
 Paths containing spaces are supported when quoted by the calling shell.
 
-The version string is `string-kernels 1.0.0 (LIBSVM 3.37)`. Version `1.0.0`
+The version string is `string-kernels 1.0.1 (LIBSVM 3.37)`. Version `1.0.0`
 is the modernization's first explicit project version. It does not imply
 historical release continuity.
 

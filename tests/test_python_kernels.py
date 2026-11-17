@@ -86,3 +86,22 @@ def test_invalid_kernel_configuration(kwargs):
 def test_positional_rejects_unequal_lengths_across_both_axes():
     with pytest.raises(ValueError, match='equal length'):
         pairwise(['AC'], ['A'], kernel='positional')
+
+
+@pytest.mark.parametrize('kernel,similarity', [('positional', .5), ('weighted-degree', .4),
+                                               ('spectrum', 1/np.sqrt(2)), ('subsequence', 1/np.sqrt(2))])
+def test_square_prediction_matrix_is_not_assumed_symmetric(kernel, similarity):
+    degree = 2 if kernel == 'weighted-degree' else 1
+    actual = pairwise(['AA', 'AC'], ['AA', 'CC'], kernel=kernel, degree=degree)
+    np.testing.assert_allclose(actual, [[1, 0], [similarity, similarity]])
+
+
+@pytest.mark.parametrize('kernel', ['spectrum', 'subsequence'])
+def test_mixed_empty_and_nonempty_feature_diagonals(kernel):
+    actual = pairwise(['A', 'AC', 'AG'], kernel=kernel, degree=2)
+    np.testing.assert_array_equal(actual, np.diag([0, 1, 1]))
+
+
+def test_subsequence_self_overflow_is_not_hidden_by_diagonal_shortcut():
+    with pytest.raises(OverflowError):
+        pairwise(['A'*550], kernel='subsequence', degree=275, decay=1)

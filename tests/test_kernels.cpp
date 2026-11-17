@@ -393,3 +393,20 @@ TEST_CASE("DSK remains equal-length positional similarity", "[kernel][distance]"
     CHECK_THROWS_AS(kernel_value("AA", "A", config), std::invalid_argument);
     CHECK_THROWS_AS(kernel_value("", "", config), std::invalid_argument);
 }
+
+TEST_CASE("Weighted degree retains raw feature weights across interrupted matching runs",
+          "[kernel][weighted-degree][regression]") {
+    const std::vector<std::pair<std::string, std::string>> pairs{{"AAAAAACAAAAA", "AAAAAAGAAAAA"},
+                                                                 {"ACACACACAC", "ACACACAC"},
+                                                                 {"ABCDEFGH", "ABCZEFGH"},
+                                                                 {"AAAAAAAAAAAA", "AAAAAAAAAAAA"}};
+    for (const auto& [left, right] : pairs) {
+        for (const int degree : {1, 2, 5, 12, std::numeric_limits<int>::max()}) {
+            CAPTURE(left, right, degree);
+            CHECK(stringkernel::weighted_degree(left, right, degree) ==
+                  approximately(oracle_raw(left, right, degree)));
+            CHECK(stringkernel::weighted_degree_self(left, degree) ==
+                  approximately(oracle_raw(left, left, degree)));
+        }
+    }
+}

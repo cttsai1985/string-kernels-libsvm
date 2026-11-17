@@ -241,3 +241,31 @@ those sources with `#error` and failed before the fix. Python-only CMake now
 builds only `src/kernels.cpp` and the binding; the full C++ library/CLI remain
 available in their normal configuration. This avoids imposing the CLI parser's
 macOS library requirements on mathematical wheels.
+
+
+## Kernel preparation and performance refactor (2026-11-17)
+
+Issue [#22](https://github.com/cttsai1985/string-kernels-libsvm/issues/22) records
+the owner-authorized design. RED: running the performance gate with the baseline
+on both sides failed its threefold high-similarity requirement (MEASURED ratio
+1.082). Independent raw weighted-degree feature-map tests cover interrupted runs,
+unequal lengths and `INT_MAX` degree; matrix tests cover square prediction inputs
+that are not symmetric, mixed zero/nonzero diagonals, and SSK self overflow.
+
+MEASURED locally after refactoring: 51/51 CTest cases passed, including actual
+LIBSVM regression/classification predictions and installed CLI checks; 45/45
+installed-candidate Python tests passed; 2/2 benchmark validation tests passed.
+GCC project coverage was 418/425 lines (98.4%), 43/43 functions (100%), and
+535/725 branches (73.8%); the 98% line floor is unchanged.
+
+The final same-toolchain benchmark ran without concurrent project builds or tests.
+All complete matrices passed parity across five fresh-process trials per backend.
+The report retains weak gains, overlapping ranges, a slightly slower CLI case,
+and the multithreaded comparator's degree-one win. The initial published-wheel
+comparison was diagnostic; the committed timings use a locally rebuilt baseline
+and candidate with GCC 13.3.0 and matching Release settings. See
+[BENCHMARKS.md](BENCHMARKS.md) and its linked raw data/profile for method and limits.
+Independent review found no concrete correctness or benchmark blockers. Hosted
+current-commit CI, artifact verification and the merge are linked in the issue
+closeout and release. Python-only builds now include `src/kernel_evaluator.cpp`
+alongside the kernel functions and binding, and still exclude CLI/parser code.
