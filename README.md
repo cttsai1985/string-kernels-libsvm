@@ -4,8 +4,10 @@
 normalized string-kernel similarities for classification and regression, with a
 C++17 kernel library and unmodified LIBSVM training and prediction tools.
 
-The original version was based on Chia-Ta Tsai’s PhD research code for
-string-kernel regression with LIBSVM in computational biology.
+The original version was based on Chia-Ta Tsai’s PhD research code for regression
+in computational biology, with a reimplementation of the weighted-degree string
+kernel for LIBSVM. The project has since been modernized through agentic coding,
+adding a tested C++ library, compiled Python packages, and scikit-learn integration.
 
 A string kernel compares sequences through shared patterns rather than requiring
 a manually constructed feature table. Different kernels encode different
