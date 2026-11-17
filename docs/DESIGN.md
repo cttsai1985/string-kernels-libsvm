@@ -18,9 +18,8 @@ Missing/unknown/duplicate options and incomplete or out-of-range integer tokens
 are errors. Negative degree values are parsed as values and rejected, not
 mistaken for option names. Help/version are standalone commands.
 
-`CMakeLists.txt` owns project version `1.0.0`; the executable reports that version
-and the bundled LIBSVM version, and tests pin both. This is the modernization's
-initial explicit project version, not a claim of historical release continuity.
+`CMakeLists.txt` owns project version `1.0.1`; the executable reports that version
+and the bundled LIBSVM version, and tests pin both. The `1.0.0` release introduced explicit versioning; `1.0.1` optimizes evaluation without changing the kernel definitions.
 
 ## Data model and API
 
@@ -121,11 +120,11 @@ weights when degree exceeds input length. Accept positive degrees representable
 as `int`, using floating-point denominators to avoid signed integer overflow;
 never allocate a vector proportional to an arbitrary requested degree.
 
-A bounded matching-prefix loop avoids substring allocation: for each starting
-position, extend matching prefixes only through `min(d, remaining positions)` and
-add their degree weights. Its worst-case operation bound is analytically
-`O(L * min(d,L))` per pair, where `L` is the shorter length. This is an algorithmic
-bound, not a measured speedup. Self-kernels can sum `(length-j+1)*beta(j)` directly.
+Weighted degree scans the shared span backwards, tracking the contiguous matching
+run. At each position, with `r = min(run,d)`, its contribution is the arithmetic
+sum `r * (2*d-r+1) / (d*(d+1))`. This computes the same feature-map dot product in
+analytical `O(L)` work and constant pair memory. Self-kernels sum
+`(length-j+1)*beta(j)` directly in `O(min(d,L))` work.
 
 Spectrum uses a position-independent frequency map of exact contiguous k-mers.
 SSK uses the feature map of ordered length-k subsequences with decay on gaps.
@@ -154,12 +153,21 @@ target/train output has a row per target and a column per reference. Every row i
 Serials are one-based; prediction row serials may exceed reference size because
 LIBSVM ignores prediction serials. Train serials are in the reference range.
 
-Validate all records first. For WDSK, precompute self values once per dataset per
-call; when reference and target are the same object, reuse those values. Stream
-rows into the supplied output stream instead of storing the matrix. Caller-owned
-input storage is linear in sequence data; auxiliary self storage is linear in
-record count, independent of the number of matrix cells. Fail before conversion
-if reference count exceeds the integer-index limit supported by LIBSVM.
+Validate all records first. A private call-scoped evaluator prepares each
+sequence's self-kernel and, for spectrum, its exact-k frequency map once. String
+views refer to immutable caller-owned strings and never outlive the call. If both
+ordered sequence cohorts are equal, preparation is shared; equal dimensions alone
+do not establish symmetry. Every self-kernel is evaluated before a known diagonal
+can return one (or zero for an empty feature map), preserving overflow failures.
+
+The Python binding allocates the requested dense matrix and computes only one
+triangle when the ordered cohorts are equal. It releases the GIL but evaluates
+on one native thread. The CLI retains row streaming and evaluates both triangles,
+so it does not add quadratic matrix storage. Its auxiliary storage is linear in
+record count plus spectrum feature-map entries and the current output row. These
+maps trade memory for less repeated counting. Each independent call prepares its
+own state, so changed configurations cannot reuse stale values. Fail before
+conversion if reference count exceeds LIBSVM's integer-index limit.
 
 ## Build, dependencies, and installation
 

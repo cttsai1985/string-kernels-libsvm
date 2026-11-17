@@ -1,0 +1,59 @@
+name: Kernel benchmarks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kernel-benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Kernel parity and performance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Check out fixed baseline sources
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: 81f5e6b376e144635ea223beb373c780d10be954
+          path: build/baseline-source
+      - name: Build both wheels with the same toolchain
+        run: |
+          python -m pip install build==1.6.1 numpy==2.2.6 pytest==9.2.0
+          python -m build build/baseline-source --wheel --outdir build/baseline-dist
+          python -m build --wheel --outdir build/candidate-dist
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+          for name in ('baseline', 'candidate'):
+              wheel = next(Path(f'build/{name}-dist').glob('*.whl'))
+              with zipfile.ZipFile(wheel) as archive:
+                  archive.extractall(f'build/{name}-package')
+          PY
+      - name: Verify the benchmark rejects wrong results
+        run: python -m pytest tests/test_benchmark.py -q
+      - name: Compare complete matrices and detect loss of the main optimization
+        run: >-
+          python benchmarks/benchmark_kernels.py
+          --baseline-root build/baseline-package
+          --candidate-root build/candidate-package
+          --cases protein_training high_similarity spectrum_training short_degree_one
+          --affinity-width 1 --trials 3 --seconds 0.2
+          --require-speedup high_similarity=3
+          --output build/benchmark-ci.json
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: kernel-benchmark-results
+          path: build/benchmark-ci.json
+          if-no-files-found: warn

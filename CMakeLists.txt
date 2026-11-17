@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(StringKernel4LIBSVM VERSION 1.0.0 LANGUAGES CXX)
+project(StringKernel4LIBSVM VERSION 1.0.1 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
@@ -46,7 +46,7 @@ if(STRINGKERNEL_BUILD_PYTHON)
   endif()
 endif()
 
-add_library(stringkernel STATIC src/kernels.cpp src/dataset.cpp src/libsvm_writer.cpp)
+add_library(stringkernel STATIC src/kernels.cpp src/kernel_evaluator.cpp src/dataset.cpp src/libsvm_writer.cpp)
 set_target_properties(stringkernel PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(stringkernel PUBLIC cxx_std_17)
 target_include_directories(stringkernel PUBLIC

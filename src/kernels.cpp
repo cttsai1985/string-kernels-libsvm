@@ -1,4 +1,5 @@
 #include "stringkernel/kernels.hpp"
+#include "kernel_evaluator.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -38,33 +39,6 @@ template <typename T> double checked_result(T value, const char* message) {
         throw std::overflow_error(message);
     }
     return static_cast<double>(value);
-}
-
-using Counts = std::unordered_map<std::string_view, std::size_t>;
-
-Counts spectrum_counts(std::string_view sequence, int k) {
-    validate_degree(k);
-    Counts result;
-    const auto order = static_cast<std::size_t>(k);
-    if (order > sequence.size()) {
-        return result;
-    }
-    result.reserve(sequence.size() - order + 1);
-    for (std::size_t start = 0; start <= sequence.size() - order; ++start) {
-        ++result[sequence.substr(start, order)];
-    }
-    return result;
-}
-
-long double count_dot(const Counts& left, const Counts& right) {
-    long double result = 0;
-    for (const auto& [token, count] : left) {
-        const auto found = right.find(token);
-        if (found != right.end()) {
-            result += static_cast<long double>(count) * found->second;
-        }
-    }
-    return result;
 }
 
 long double subsequence_raw_long(std::string_view a, std::string_view b, int k, double decay) {
@@ -164,15 +138,12 @@ double weighted_degree(std::string_view a, std::string_view b, int degree) {
     const auto maximum_order = static_cast<std::size_t>(degree);
     const auto scale = weight_scale(degree);
     double score = 0;
-
-    for (std::size_t position = 0; position < length; ++position) {
-        const auto limit = std::min(maximum_order, length - position);
-        for (std::size_t order = 1; order <= limit; ++order) {
-            if (a[position + order - 1] != b[position + order - 1]) {
-                break;
-            }
-            score += weight_at(degree, order, scale);
-        }
+    std::size_t run = 0;
+    const auto d = static_cast<double>(degree);
+    for (std::size_t position = length; position > 0; --position) {
+        run = a[position - 1] == b[position - 1] ? run + 1 : 0;
+        const auto count = static_cast<double>(std::min(run, maximum_order));
+        score += count * (2.0 * d - count + 1.0) * (scale / 2.0);
     }
     return score;
 }
@@ -190,13 +161,17 @@ double weighted_degree_self(std::string_view sequence, int degree) {
 }
 
 double spectrum_kernel(std::string_view a, std::string_view b, int k) {
-    return checked_result(count_dot(spectrum_counts(a, k), spectrum_counts(b, k)),
-                          "spectrum kernel exceeds numeric range");
+    validate_degree(k);
+    return checked_result(
+        detail::count_dot(detail::spectrum_counts(a, k), detail::spectrum_counts(b, k)),
+        "spectrum kernel exceeds numeric range");
 }
 
 double spectrum_self(std::string_view sequence, int k) {
-    const auto counts = spectrum_counts(sequence, k);
-    return checked_result(count_dot(counts, counts), "spectrum self-kernel exceeds numeric range");
+    validate_degree(k);
+    const auto counts = detail::spectrum_counts(sequence, k);
+    return checked_result(detail::count_dot(counts, counts),
+                          "spectrum self-kernel exceeds numeric range");
 }
 
 double subsequence_kernel(std::string_view a, std::string_view b, int k, double decay) {

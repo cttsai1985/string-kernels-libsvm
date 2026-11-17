@@ -211,7 +211,7 @@ class LibsvmIntegrationTests(unittest.TestCase):
                          (self.options.source / "third_party" / "libsvm" / "COPYRIGHT").read_bytes())
         self.assertTrue((copyright_file.parent / "THIRD_PARTY_NOTICES.md").is_file())
         self.assertEqual(self.run_program(converter, "--version").stdout,
-                         "string-kernels 1.0.0 (LIBSVM 3.37)\n")
+                         "string-kernels 1.0.1 (LIBSVM 3.37)\n")
         train_matrix = self.directory / "installed.train"
         test_matrix = self.directory / "installed.test"
         model = self.directory / "installed.model"

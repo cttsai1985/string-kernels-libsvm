@@ -35,6 +35,20 @@ At degree `2`, `beta(1) = 2/3` and `beta(2) = 1/3`. Therefore
 `raw(AC,AC) = 5/3`, `raw(AC,AD) = 2/3`, and `K(AC,AD) = 2/5`.
 These fractions are mathematical specifications, not benchmark measurements.
 
+### Evaluation cost
+
+A backwards scan tracks the same-position matching run. For a run capped at
+`r = min(run,d)`, the sum of its order weights is
+`r * (2*d-r+1) / (d*(d+1))`. Summing this at every starting position gives
+analytical `O(L)` pair work and constant working memory, including highly
+similar sequences and large requested degrees. This changes the evaluation
+algorithm, not the feature map. Self-kernels use `O(min(d,L))` work.
+
+Matrix calls cache self-kernels, and spectrum calls also cache per-sequence
+frequency maps. Python training matrices reuse symmetry; the CLI streams rows
+without retaining a dense matrix. See [benchmarks](BENCHMARKS.md) for measured
+costs, memory tradeoffs, and comparisons.
+
 ### Position and unequal lengths
 
 This kernel compares positions. A matching substring at another position does

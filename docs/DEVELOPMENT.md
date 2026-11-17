@@ -168,9 +168,9 @@ neither reads the clock nor changes the process locale.
 
 The writer validates all records before its first row, precomputes self-kernels,
 and retains only the current output row. It does not retain the complete matrix.
-When the same `Dataset` object is both reference and target, its self-kernels are
-reused within that call. Later calls with different configurations calculate new
-self-kernels.
+Identical ordered sequence cohorts share preparation within a call. Spectrum
+frequency maps are cached for that call; later configurations prepare fresh maps
+and self-kernels. See [benchmark reproduction](BENCHMARKS.md#reproduce-the-measurement).
 
 ## Inspect the verification gates
 
