@@ -1,8 +1,13 @@
 # String Kernels for LIBSVM
 
-**Support vector learning directly from sequences.** This project computes
-normalized string-kernel similarities for classification and regression, with a
-C++17 kernel library and unmodified LIBSVM training and prediction tools.
+**Support vector learning directly from sequences.**
+
+The original C++ implementation converted amino-acid sequences into precomputed
+weighted-degree kernel matrices for regression with LIBSVM. It was developed
+during Chia-Ta Tsai’s doctoral research in computational biology. The project has
+since been modernized through agentic coding, retaining the standalone LIBSVM
+workflow and adding a tested C++17 library, compiled Python packages, and
+scikit-learn integration.
 
 A string kernel compares sequences through shared patterns rather than requiring
 a manually constructed feature table. Different kernels encode different
@@ -161,11 +166,6 @@ For reproducibility, also record the project commit, kernel parameters,
 preprocessing, data partition, and solver version. No archival software DOI is
 assigned by this README.
 
-## Licensing
+## License
 
-Project-owned code is licensed under **[BSD-3-Clause](LICENSE)**. Binary packages
-include the project license and applicable binding notices. NumPy, scikit-learn,
-and upstream tools retain their own terms; see [licensing](docs/LICENSING.md) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-The unsupported historical analyzer remains outside the supported build.
+Licensed under [BSD-3-Clause](LICENSE).
