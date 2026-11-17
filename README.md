@@ -9,6 +9,11 @@ since been modernized through agentic coding, retaining the standalone LIBSVM
 workflow and adding a tested C++17 library, compiled Python packages, and
 scikit-learn integration.
 
+**Current release: [v1.1.0](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.1.0).**
+Compiled wheels support CPython 3.10–3.13 on Linux x86_64, Windows AMD64, and
+macOS Intel/Apple Silicon. See [compiled-package installation](docs/PYTHON.md#install-a-compiled-package)
+and [how CPU acceleration works](docs/OPTIMIZATION.md).
+
 A string kernel compares sequences through shared patterns rather than requiring
 a manually constructed feature table. Different kernels encode different
 assumptions: whether a pattern's position matters, whether it must be contiguous,
@@ -92,13 +97,13 @@ kernel also has substantial per-pair computation and memory costs.
 
 | Goal | Guide |
 | --- | --- |
-| Build the existing tools and run classification or regression | [Command-line quickstart](docs/QUICKSTART.md). |
+| Install the compiled package and use scikit-learn | [Python installation and usage](docs/PYTHON.md) · [v1.1.0 downloads](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.1.0). |
+| Understand CPU acceleration and choose thread counts | [Optimization guide and hardware benchmarks](docs/OPTIMIZATION.md). |
+| Run the standalone LIBSVM workflow | [Command-line quickstart](docs/QUICKSTART.md). |
 | Understand formulas, parameters, and matrix layout | [Kernel reference](docs/KERNELS.md). |
-| Install a compiled package and use scikit-learn | [Python guide](docs/PYTHON.md) and [release downloads](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.1.0). |
 | Develop, test, or install the C++ library | [Development](docs/DEVELOPMENT.md) and [compatibility](docs/COMPATIBILITY.md). |
 
-Build-system commands and generated file paths belong in the quickstart rather
-than in this conceptual overview. The installed C++ command is `string-kernels`. The Python distribution is
+The installed C++ command is `string-kernels`. The Python distribution is
 `string-kernels-libsvm`, imported as `stringkernels`.
 
 ### scikit-learn interoperability
@@ -136,34 +141,45 @@ Use `SVR(kernel="precomputed")` for regression. See the [Python guide](docs/PYTH
 for compiled-wheel installation, the matrix API, tuning, and resource limits.
 The release is distributed through GitHub Releases; PyPI publication is separate.
 
-## Performance benchmarks
+## CPU acceleration and benchmarks
 
-The compiled implementation prepares sequence features once per matrix call,
-reuses training-matrix symmetry in Python, and evaluates weighted degree with a
-linear scan of matching runs. **MEASURED** median matrix-construction times on
-one Linux/Threadripper host, using matching GCC Release builds:
+Version `1.1.0` combines three kinds of optimization:
 
-| Workload | v1.0.0 | v1.0.1 |
-| --- | --- | --- |
-| Protein WD training: 192 sequences, length 64, degree 5 | 2.916 ms | 1.370 ms |
-| Highly similar WD training: 48 sequences, length 192, degree 64 | 12.606 ms | 0.231 ms |
-| Exact-3 spectrum training: 128 sequences, length 128 | 89.833 ms | 8.183 ms |
+| Layer | How it reduces cost |
+| --- | --- |
+| Algorithm and data reuse | Prepare self-kernels and spectrum counts once per matrix call; reuse training-matrix symmetry in Python. |
+| SIMD within a CPU core | Compare blocks of bytes with AVX2/POPCNT on supported x86 CPUs or NEON on ARM64. Runtime dispatch retains a portable fallback. |
+| Multiple CPU cores | Evaluate independent matrix rows with explicitly requested native workers. The CLI keeps ordered, bounded output buffering. |
 
-These are synthetic workloads and do not measure predictive accuracy or solver
-training. Smaller inputs and rectangular prediction matrices benefit less.
-See the [v1.0.1 benchmark report](docs/BENCHMARKS.md) for five-trial ranges, unchanged
-and slower cases, CLI timings, comparisons with one- and four-thread `strkernels`,
-raw results, and reproduction instructions.
+Explicit SIMD applies to positional similarity and weighted-degree orders up to
+`32`. Higher weighted-degree orders retain the linear matching-run scan.
+Spectrum and subsequence kernels can use row workers but have no explicit SIMD
+pair evaluator in this release.
 
-Version `1.1.0` adds runtime-selected AVX2/POPCNT or ARM NEON for supported
-kernels, plus explicit native CPU threads through `pairwise(..., n_jobs=4)` or
-`StringKernel(n_jobs=4)`. The CLI accepts `--threads 4`. Defaults use one thread;
-`backend="scalar"` / `--backend scalar` selects the portable implementation.
-MEASURED on the tested large workloads, explicit SIMD improved the same
-portable evaluator by 3.13× for weighted degree and 7.54× for degree-one weighted
-degree. Threading had mixed gains, so one thread remains the default.
-Read [how we optimize speed](docs/OPTIMIZATION.md) for SIMD, multicore execution,
-measurement, portability, and choosing thread counts during cross-validation.
+**MEASURED** median matrix-construction times on one Linux/WSL2 Threadripper
+host, across five trials with matching GCC Release builds. Both columns use
+one native thread and the same mask/count algorithm, isolating the explicit
+SIMD backend:
+
+| Workload | Portable backend | AVX2/POPCNT backend | Speedup |
+| --- | --- | --- | --- |
+| Protein WD training: 512 sequences, length 256, degree 5 | 37.757 ms | 12.047 ms | 3.13× |
+| Degree-one WD training: 512 sequences, length 256 | 43.647 ms | 5.792 ms | 7.54× |
+
+These synthetic workloads measure kernel construction, not predictive accuracy
+or solver training. Small inputs can regress, and threading has mixed gains;
+**one native worker remains the default**. Request a positive worker budget
+with `pairwise(..., n_jobs=4)` or `StringKernel(n_jobs=4)`, or `--threads 4`
+for the CLI. Keep the inner kernel at one worker when cross-validation already
+runs folds in parallel. `backend="scalar"` / `--backend scalar` selects the
+portable evaluator.
+
+The [dedicated optimization guide](docs/OPTIMIZATION.md) explains SIMD,
+threading, memory costs, and portability. It includes trial ranges, slower cases,
+CLI measurements, [raw hardware results](benchmarks/results/hardware-linux.json),
+and reproduction instructions. The earlier algorithm/data-reuse comparison and
+one-/four-thread `strkernels` results remain in the
+[v1.0.1 benchmark report](docs/BENCHMARKS.md).
 
 ## References and attribution
 
