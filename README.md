@@ -161,11 +161,6 @@ For reproducibility, also record the project commit, kernel parameters,
 preprocessing, data partition, and solver version. No archival software DOI is
 assigned by this README.
 
-## Licensing
+## License
 
-Project-owned code is licensed under **[BSD-3-Clause](LICENSE)**. Binary packages
-include the project license and applicable binding notices. NumPy, scikit-learn,
-and upstream tools retain their own terms; see [licensing](docs/LICENSING.md) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-The unsupported historical analyzer remains outside the supported build.
+Licensed under [BSD-3-Clause](LICENSE).
