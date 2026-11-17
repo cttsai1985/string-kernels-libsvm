@@ -1,5 +1,9 @@
 # Performance benchmarks
 
+This page records the v1.0.1 algorithm/data-reuse measurements. For v1.1.0
+SIMD and multicore measurements and how to optimize speed, see the
+[dedicated optimization guide](OPTIMIZATION.md).
+
 These benchmarks measure kernel-matrix construction, not model accuracy or SVM
 training. The `1.0.1` refactor preserves the published kernels and their
 normalization. Weighted-degree pairs now use a linear scan of matching runs;

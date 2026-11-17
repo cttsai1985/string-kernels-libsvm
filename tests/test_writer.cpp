@@ -212,3 +212,29 @@ TEST_CASE("writer reports initially bad streams, write failures, and flush failu
     std::ostream flushed(&flush_buffer);
     CHECK_THROWS_AS(write_precomputed(flushed, data, data), std::runtime_error);
 }
+
+TEST_CASE("parallel writer preserves streaming order and propagates stream failures") {
+    Dataset reference;
+    for (int i = 0; i < 70; ++i) {
+        reference.push_back({i % 2 == 0 ? "AACA" : "CCAC", i / 3.0});
+    }
+    for (const auto type : {KernelType::distance, KernelType::weighted_degree, KernelType::spectrum,
+                            KernelType::subsequence}) {
+        const KernelConfig config{type, 2};
+        std::ostringstream serial, parallel;
+        write_precomputed(serial, reference, reference, config, {1, CpuBackend::scalar});
+        write_precomputed(parallel, reference, reference, config, {4, CpuBackend::automatic});
+        CHECK(parallel.str() == serial.str());
+    }
+    FailingBuffer failed;
+    std::ostream bad(&failed);
+    CHECK_THROWS_AS(write_precomputed(bad, reference, reference, {}, {4}), std::runtime_error);
+    FailedFlushBuffer flush;
+    std::ostream bad_flush(&flush);
+    CHECK_THROWS_AS(write_precomputed(bad_flush, reference, reference, {}, {4}),
+                    std::runtime_error);
+    std::ostringstream untouched;
+    CHECK_THROWS_AS(write_precomputed(untouched, reference, reference, {}, {0}),
+                    std::invalid_argument);
+    CHECK(untouched.str().empty());
+}

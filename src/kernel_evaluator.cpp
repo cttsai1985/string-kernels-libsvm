@@ -1,4 +1,5 @@
 #include "kernel_evaluator.hpp"
+#include "cpu_kernels.hpp"
 
 #include <cmath>
 #include <limits>
@@ -51,19 +52,29 @@ KernelEvaluator::prepare(const std::vector<std::string_view>& sequences) const {
 
 KernelEvaluator::KernelEvaluator(const KernelConfig& config,
                                  const std::vector<std::string_view>& reference,
-                                 const std::vector<std::string_view>& target)
-    : config_(config), symmetric_(reference == target), reference_(prepare(reference)),
-      target_(symmetric_ ? Cohort{} : prepare(target)) {}
+                                 const std::vector<std::string_view>& target, CpuBackend backend)
+    : config_(config), symmetric_(reference == target), backend_(backend),
+      reference_(prepare(reference)), target_(symmetric_ ? Cohort{} : prepare(target)) {}
 
 double KernelEvaluator::value(std::size_t row, std::size_t column) const {
     const auto& target = symmetric_ ? reference_ : target_;
     if (symmetric_ && row == column) {
         return reference_.self[row] == 0 ? 0 : 1;
     }
-    const auto raw =
-        config_.type == KernelType::spectrum
-            ? static_cast<double>(count_dot(target.counts[row], reference_.counts[column]))
-            : raw_kernel(target.sequences[row], reference_.sequences[column], config_);
+    double raw;
+    const bool use_simd = backend_ == CpuBackend::automatic;
+    if (config_.type == KernelType::spectrum) {
+        raw = static_cast<double>(count_dot(target.counts[row], reference_.counts[column]));
+    } else if (config_.type == KernelType::weighted_degree) {
+        raw = weighted_degree_cpu(target.sequences[row], reference_.sequences[column],
+                                  config_.degree, use_simd);
+    } else if (config_.type == KernelType::distance) {
+        raw = static_cast<double>(positional_matches(target.sequences[row],
+                                                     reference_.sequences[column], use_simd)) /
+              static_cast<double>(target.sequences[row].size());
+    } else {
+        raw = raw_kernel(target.sequences[row], reference_.sequences[column], config_);
+    }
     return normalize_kernel(raw, target.self[row], reference_.self[column]);
 }
 

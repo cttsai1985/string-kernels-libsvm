@@ -105,3 +105,56 @@ def test_mixed_empty_and_nonempty_feature_diagonals(kernel):
 def test_subsequence_self_overflow_is_not_hidden_by_diagonal_shortcut():
     with pytest.raises(OverflowError):
         pairwise(['A'*550], kernel='subsequence', degree=275, decay=1)
+
+
+@pytest.mark.parametrize('kernel', ['positional', 'weighted-degree', 'spectrum', 'subsequence'])
+@pytest.mark.parametrize('backend', ['scalar', 'auto'])
+@pytest.mark.parametrize('n_jobs', [1, 2, 4, 20])
+def test_execution_modes_preserve_independent_features_and_reference_order(kernel, backend, n_jobs):
+    texts = ['AAAC', 'ACAA', 'CAAA', 'GGTT']
+    maps = [features(x, kernel, 2, .5) for x in texts]
+    expected = np.asarray([[sum(v * b.get(k, 0) for k, v in a.items()) /
+                           math.sqrt(sum(v*v for v in a.values()) * sum(v*v for v in b.values()))
+                           for b in maps] for a in maps])
+    np.testing.assert_allclose(pairwise(texts, kernel=kernel, degree=2, backend=backend, n_jobs=n_jobs),
+                               expected, rtol=1e-13, atol=1e-14)
+    np.testing.assert_allclose(pairwise([texts[2], texts[0]], [texts[3], texts[1], texts[0]],
+                                       kernel=kernel, degree=2, backend=backend, n_jobs=n_jobs),
+                               expected[np.ix_([2, 0], [3, 1, 0])], rtol=1e-13, atol=1e-14)
+
+
+@pytest.mark.parametrize('n_jobs', [True, False, 0, -1, 1.5, '4', None, 2**31])
+def test_invalid_worker_counts_are_rejected(n_jobs):
+    with pytest.raises((ValueError, TypeError, OverflowError)):
+        pairwise(['AC'], n_jobs=n_jobs)
+
+
+@pytest.mark.parametrize('backend', ['avx2', 'gpu', '', None, 1])
+def test_invalid_cpu_backend_is_rejected(backend):
+    with pytest.raises((ValueError, TypeError)):
+        pairwise(['AC'], backend=backend)
+
+
+def test_parallel_zero_features_and_overflow_propagation():
+    for kernel in ('spectrum', 'subsequence'):
+        np.testing.assert_array_equal(pairwise(['A', 'AC', 'AG'], kernel=kernel, degree=2, n_jobs=4),
+                                      np.diag([0, 1, 1]))
+    with pytest.raises(OverflowError):
+        pairwise(['A'*550], kernel='subsequence', degree=275, decay=1, n_jobs=4)
+
+
+@pytest.mark.parametrize('kernel,degree', [('weighted-degree', 1), ('weighted-degree', 5),
+    ('weighted-degree', 32), ('weighted-degree', 33), ('weighted-degree', 2**31-1), ('positional', 1)])
+@pytest.mark.parametrize('backend', ['scalar', 'auto'])
+def test_installed_vector_blocks_match_independent_features(kernel, degree, backend):
+    # Long enough for vector loads and runs spanning 32/64-byte boundaries.
+    texts = ['A'*31 + 'C' + 'A'*41, 'A'*32 + 'G' + 'A'*40, 'C'*33 + 'A'*40]
+    maps = [features(x, kernel, degree, .5) for x in texts]
+    expected = np.asarray([[sum(v * b.get(k, 0) for k, v in a.items()) /
+                           math.sqrt(sum(v*v for v in a.values()) * sum(v*v for v in b.values()))
+                           for b in maps] for a in maps])
+    actual = pairwise(texts, kernel=kernel, degree=degree, backend=backend, n_jobs=4)
+    np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-14)
+    np.testing.assert_allclose(pairwise([texts[2]], [texts[1], texts[0]], kernel=kernel,
+                                       degree=degree, backend=backend, n_jobs=4),
+                               expected[np.ix_([2], [1, 0])], rtol=1e-12, atol=1e-14)

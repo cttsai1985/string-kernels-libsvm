@@ -16,7 +16,7 @@ reference-column ordering remain unchanged. The historical CMake project ID and
 ## Supported command line
 
 ```text
-string-kernels -train FILE [-test FILE] [-k K] [-t TYPE | --kernel NAME] [--decay LAMBDA]
+string-kernels -train FILE [-test FILE] [-k K] [-t TYPE | --kernel NAME] [--decay LAMBDA] [--threads N] [--backend auto|scalar]
 string-kernels --help
 string-kernels --version
 ```
@@ -29,6 +29,8 @@ string-kernels --version
 | `-t TYPE` | Stable IDs: `0` positional, `1` weighted degree (default), `2` spectrum, `3` subsequence. |
 | `--kernel NAME` | `positional`, `weighted-degree`, `spectrum`, or `subsequence`; cannot be combined with `-t`. |
 | `--decay LAMBDA` | SSK only; finite in `(0, 1]`, default `0.5`. |
+| `--threads N` | Positive native worker count in the platform int range; default `1`. |
+| `--backend auto\|scalar` | Runtime CPU dispatch (default) or portable execution. |
 | `--help` | Standalone usage command. |
 | `--version` | Standalone project and bundled LIBSVM version command. |
 
@@ -37,7 +39,7 @@ malformed parameters, invalid degrees/decay, and unsupported kernel types are er
 only matrix data to stdout. Diagnostics go to stderr, with a nonzero exit status.
 Paths containing spaces are supported when quoted by the calling shell.
 
-The version string is `string-kernels 1.0.1 (LIBSVM 3.37)`. Version `1.0.0`
+The version string is `string-kernels 1.1.0 (LIBSVM 3.37)`. Version `1.0.0`
 is the modernization's first explicit project version. It does not imply
 historical release continuity.
 
@@ -71,7 +73,7 @@ The old pointer-owning API, global dataset state, mutable self-kernel caches, an
 unscoped names are replaced. This is an intentional source API change. There is
 no adapter for old constructors or internal fields.
 
-Supported headers are `stringkernel/kernels.hpp`, `stringkernel/dataset.hpp`, and `stringkernel/libsvm_writer.hpp`.
+Supported headers are `stringkernel/kernels.hpp`, `stringkernel/dataset.hpp`, and `stringkernel/libsvm_writer.hpp`, and `stringkernel/execution.hpp`.
 Their declarations live in `namespace stringkernel`. `Dataset` is a vector of
 value-owned `Sample` records. Each calculation receives its kernel configuration
 explicitly. See the [library example](DEVELOPMENT.md#use-the-c-library).
@@ -93,5 +95,23 @@ alone does not restore the analyzer. The dormant RBF-over-similarity path is als
 outside the supported converter and library API.
 
 Python bindings and the scikit-learn transformer are described in [the Python
-guide](PYTHON.md). FASTA parsing, automatic alignment, native parallel execution,
+guide](PYTHON.md). FASTA parsing, automatic alignment,
 and automatic model tuning remain outside the package.
+
+
+## Hardware execution in 1.1.0
+
+Mathematical parameters remain in `KernelConfig`; `ExecutionConfig` supplies
+thread count and automatic/scalar CPU backend separately. `write_precomputed`
+accepts it as an optional final argument. Existing source calls remain valid;
+recompile C++ clients against the updated static library. Installed CMake clients
+must resolve `Threads` before including the exported targets, as shown in the
+[development guide](DEVELOPMENT.md#use-the-c-library).
+
+Python adds positive `n_jobs` and `backend='auto'|'scalar'` to `pairwise` and
+`StringKernel`; cloning and persistence retain these constructor parameters.
+Defaults select one native thread and a runtime-safe CPU implementation. Order,
+shape, normalization, zero-feature handling and overflow errors are preserved.
+Floating-point summation order may change within the existing numerical
+precision contract; byte-for-byte decimal output is not guaranteed across
+versions or compilers. CLI threading retains ordered streaming through row blocks capped at 64 rows. See [the optimization guide](OPTIMIZATION.md).

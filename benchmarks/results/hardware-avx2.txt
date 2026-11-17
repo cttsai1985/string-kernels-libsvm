@@ -1,0 +1,22 @@
+MEASURED disassembly of the actual benchmark extension
+SHA256: a9a8778b469b3fad4e2c7a8113d3db27001c94affabcd6747cd1a39f2913fee3
+Command: objdump -d <native-extension>
+Representative instructions (presence, not instruction execution counts):
+   23fbd:	c4 c1 65 74 04 10    	vpcmpeqb (%r8,%rdx,1),%ymm3,%ymm0
+   23fc7:	c5 fd d7 c8          	vpmovmskb %ymm0,%ecx
+   23fcb:	f3 0f b8 c9          	popcnt %ecx,%ecx
+   24003:	c4 c1 59 74 04 10    	vpcmpeqb (%r8,%rdx,1),%xmm4,%xmm0
+   242d6:	f3 0f b8 c0          	popcnt %eax,%eax
+   242f0:	f3 0f b8 c0          	popcnt %eax,%eax
+   243ab:	c4 c1 51 74 02       	vpcmpeqb (%r10),%xmm5,%xmm0
+   246fe:	c4 81 41 74 04 22    	vpcmpeqb (%r10,%r12,1),%xmm7,%xmm0
+   249ec:	f3 45 0f b8 e4       	popcnt %r12d,%r12d
+   24a46:	c4 c1 4d 74 04 12    	vpcmpeqb (%r10,%rdx,1),%ymm6,%ymm0
+   24a50:	c5 fd d7 c0          	vpmovmskb %ymm0,%eax
+   24a54:	f3 0f b8 c0          	popcnt %eax,%eax
+   24a8d:	c4 c1 49 74 14 11    	vpcmpeqb (%r9,%rdx,1),%xmm6,%xmm2
+   24d60:	f3 0f b8 c0          	popcnt %eax,%eax
+   24d87:	c4 81 45 74 44 13 20 	vpcmpeqb 0x20(%r11,%r10,1),%ymm7,%ymm0
+   24d8e:	c5 fd d7 f0          	vpmovmskb %ymm0,%esi
+   24e75:	c5 cd 74 06          	vpcmpeqb (%rsi),%ymm6,%ymm0
+   24e79:	c5 fd d7 c0          	vpmovmskb %ymm0,%eax

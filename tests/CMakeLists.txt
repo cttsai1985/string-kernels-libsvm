@@ -1,5 +1,6 @@
 add_executable(stringkernel_tests
-  test_kernels.cpp test_dataset.cpp test_options.cpp test_writer.cpp)
+  test_kernels.cpp test_dataset.cpp test_options.cpp test_writer.cpp
+  test_cpu_kernels.cpp test_execution.cpp)
 target_link_libraries(stringkernel_tests PRIVATE stringkernel_options Catch2::Catch2WithMain)
 stringkernel_project_target(stringkernel_tests)
 list(APPEND CMAKE_MODULE_PATH "${catch2_SOURCE_DIR}/extras")

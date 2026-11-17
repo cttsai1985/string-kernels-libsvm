@@ -18,7 +18,7 @@ Missing/unknown/duplicate options and incomplete or out-of-range integer tokens
 are errors. Negative degree values are parsed as values and rejected, not
 mistaken for option names. Help/version are standalone commands.
 
-`CMakeLists.txt` owns project version `1.0.1`; the executable reports that version
+`CMakeLists.txt` owns project version `1.1.0`; the executable reports that version
 and the bundled LIBSVM version, and tests pin both. The `1.0.0` release introduced explicit versioning; `1.0.1` optimizes evaluation without changing the kernel definitions.
 
 ## Data model and API
@@ -161,10 +161,11 @@ do not establish symmetry. Every self-kernel is evaluated before a known diagona
 can return one (or zero for an empty feature map), preserving overflow failures.
 
 The Python binding allocates the requested dense matrix and computes only one
-triangle when the ordered cohorts are equal. It releases the GIL but evaluates
-on one native thread. The CLI retains row streaming and evaluates both triangles,
+triangle when the ordered cohorts are equal. It releases the GIL. ExecutionConfig defaults to one native thread and accepts an
+explicit positive worker count; disjoint matrix rows run on call-scoped C++
+threads with exception capture, cancellation and joining before return. The CLI retains ordered row streaming through blocks capped at 64 rows and evaluates both triangles,
 so it does not add quadratic matrix storage. Its auxiliary storage is linear in
-record count plus spectrum feature-map entries and the current output row. These
+record count plus spectrum feature-map entries and the current bounded block of output rows. These
 maps trade memory for less repeated counting. Each independent call prepares its
 own state, so changed configurations cannot reuse stale values. Fail before
 conversion if reference count exceeds LIBSVM's integer-index limit.
@@ -258,5 +259,21 @@ Python bindings now expose the existing kernels as NumPy matrices. A fold-local
 scikit-learn transformer uses the public precomputed-kernel API; sklearn supplies
 its solver. Python builds disable optional CLI targets, require no LIBSVM cache,
 and install only the extension, Python modules, and notices. See [Python](PYTHON.md).
-FASTA parsing, automatic alignment, native parallel execution, and model-quality
+FASTA parsing, automatic alignment, and model-quality
 research remain separately scoped features.
+
+
+## CPU execution backend
+
+`ExecutionConfig` keeps resource choices separate from `KernelConfig`. Common
+weighted-degree orders up to 32 and positional similarity share a fixed-window
+mask/count evaluator, with portable and explicitly vectorized equality masks.
+AVX2/POPCNT sources have isolated ISA flags and runtime CPU/OS-state guards;
+ARM64 uses NEON. A build option omits vector sources entirely. Larger degrees
+retain the linear matching-run implementation. No matrix is cached across calls.
+
+The private row executor owns cancellation and joining through RAII, including
+partial worker-launch failure. Shared preparation is immutable; output cells or
+row strings have a single owner. The caller writes all stream data and accesses
+Python objects. Native worker counts are explicit to avoid hidden nested
+parallelism. See [optimization design and measurement](OPTIMIZATION.md).

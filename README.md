@@ -94,7 +94,7 @@ kernel also has substantial per-pair computation and memory costs.
 | --- | --- |
 | Build the existing tools and run classification or regression | [Command-line quickstart](docs/QUICKSTART.md). |
 | Understand formulas, parameters, and matrix layout | [Kernel reference](docs/KERNELS.md). |
-| Install a compiled package and use scikit-learn | [Python guide](docs/PYTHON.md) and [release downloads](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.0.1). |
+| Install a compiled package and use scikit-learn | [Python guide](docs/PYTHON.md) and [release downloads](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.1.0). |
 | Develop, test, or install the C++ library | [Development](docs/DEVELOPMENT.md) and [compatibility](docs/COMPATIBILITY.md). |
 
 Build-system commands and generated file paths belong in the quickstart rather
@@ -151,9 +151,19 @@ one Linux/Threadripper host, using matching GCC Release builds:
 
 These are synthetic workloads and do not measure predictive accuracy or solver
 training. Smaller inputs and rectangular prediction matrices benefit less.
-See the [full benchmark report](docs/BENCHMARKS.md) for five-trial ranges, unchanged
+See the [v1.0.1 benchmark report](docs/BENCHMARKS.md) for five-trial ranges, unchanged
 and slower cases, CLI timings, comparisons with one- and four-thread `strkernels`,
 raw results, and reproduction instructions.
+
+Version `1.1.0` adds runtime-selected AVX2/POPCNT or ARM NEON for supported
+kernels, plus explicit native CPU threads through `pairwise(..., n_jobs=4)` or
+`StringKernel(n_jobs=4)`. The CLI accepts `--threads 4`. Defaults use one thread;
+`backend="scalar"` / `--backend scalar` selects the portable implementation.
+MEASURED on the tested large workloads, explicit SIMD improved the same
+portable evaluator by 3.13× for weighted degree and 7.54× for degree-one weighted
+degree. Threading had mixed gains, so one thread remains the default.
+Read [how we optimize speed](docs/OPTIMIZATION.md) for SIMD, multicore execution,
+measurement, portability, and choosing thread counts during cross-validation.
 
 ## References and attribution
 

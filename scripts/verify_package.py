@@ -36,6 +36,9 @@ def inspect_archives(directory: Path) -> Path:
         relative = {name.split('/', 1)[1] for name in names if '/' in name}
         required = {'LICENSE', 'pyproject.toml', 'CMakeLists.txt', 'src/kernels.cpp',
                     'src/kernel_evaluator.cpp', 'src/kernel_evaluator.hpp',
+                    'src/cpu_kernels.cpp', 'src/cpu_kernels.hpp', 'src/cpu_kernels_avx2.cpp',
+                    'src/cpu_kernels_neon.cpp', 'src/execution.cpp', 'src/parallel_rows.cpp',
+                    'src/parallel_rows.hpp', 'include/stringkernel/execution.hpp', 'cmake/Cpu.cmake',
                     'include/stringkernel/kernels.hpp', 'python/bindings.cpp'}
         if not required <= relative:
             raise ValueError(f'sdist lacks {required - relative}')

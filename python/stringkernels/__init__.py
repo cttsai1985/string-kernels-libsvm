@@ -40,15 +40,27 @@ def _equal_lengths(targets, references, kernel):
             raise ValueError('positional kernel requires equal length byte strings')
 
 
-def pairwise(X, Y=None, *, kernel='weighted-degree', degree=5, decay=0.5):
+def _execution_parameters(n_jobs, backend):
+    if isinstance(n_jobs, bool) or not isinstance(n_jobs, Integral):
+        raise TypeError('n_jobs must be a positive integer')
+    if n_jobs < 1:
+        raise ValueError('n_jobs must be positive')
+    if not isinstance(backend, str) or backend not in ('auto', 'scalar'):
+        raise ValueError("backend must be 'auto' or 'scalar'")
+    return int(n_jobs), backend == 'auto'
+
+
+def pairwise(X, Y=None, *, kernel='weighted-degree', degree=5, decay=0.5, n_jobs=1, backend='auto'):
     """Return a float64 matrix with rows from X and reference columns from Y.
 
     With Y=None, compute the square training Gram matrix. Strings are compared
     as case-sensitive UTF-8 bytes without normalization or automatic alignment.
     A dense result uses 8 * len(X) * len(Y) bytes, excluding working storage.
+    n_jobs is a positive native thread count (default 1); backend='scalar'
+    disables explicit SIMD. Keep n_jobs=1 inside parallel cross-validation.
     """
     targets = _sequences(X)
     references = targets if Y is None else _sequences(Y)
     parameters = _parameters(kernel, degree, decay)
     _equal_lengths(targets, references, kernel)
-    return _native.pairwise(targets, references, *parameters)
+    return _native.pairwise(targets, references, *parameters, *_execution_parameters(n_jobs, backend))

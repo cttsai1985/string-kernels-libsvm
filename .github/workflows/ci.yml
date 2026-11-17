@@ -117,7 +117,7 @@ jobs:
       - name: Enforce coverage for project implementation
         run: |
           python -c "from pathlib import Path; Path('coverage').mkdir(exist_ok=True)"
-          gcovr --root . --filter 'src/.*\.cpp$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
+          gcovr --root . --filter 'src/.*\.(cpp|hpp)$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:

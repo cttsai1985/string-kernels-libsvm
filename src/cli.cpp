@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
                 target = stringkernel::load_dataset(*options.test);
             }
             stringkernel::write_precomputed(std::cout, training, target ? *target : training,
-                                            options.kernel);
+                                            options.kernel, options.execution);
         }
         std::cout.flush();
         if (!std::cout) {

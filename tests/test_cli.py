@@ -50,7 +50,7 @@ class ConverterTests(unittest.TestCase):
         self.assertIn("-test", help_result.stdout)
         version = self.run_converter("--version")
         self.assertEqual(version.returncode, 0, version.stderr)
-        self.assertEqual(version.stdout, "string-kernels 1.0.1 (LIBSVM 3.37)\n")
+        self.assertEqual(version.stdout, "string-kernels 1.1.0 (LIBSVM 3.37)\n")
 
     def test_no_arguments_missing_file_and_missing_train_fail(self) -> None:
         self.assert_failure()
@@ -163,7 +163,8 @@ class ConverterTests(unittest.TestCase):
 
     @unittest.skipUnless(Path("/dev/full").exists(), "requires Linux /dev/full")
     def test_redirected_output_failure_has_nonzero_status(self) -> None:
-        for arguments in [["-train", str(self.train)], ["--help"], ["--version"]]:
+        for arguments in [["-train", str(self.train)], ["-train", str(self.train), "--threads", "4"],
+                          ["--help"], ["--version"]]:
             with self.subTest(arguments=arguments):
                 with Path("/dev/full").open("w", encoding="utf-8") as output:
                     result = subprocess.run(
@@ -172,6 +173,24 @@ class ConverterTests(unittest.TestCase):
                     )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(result.stderr.strip())
+
+    def test_parallel_execution_preserves_order_and_all_kernels(self) -> None:
+        self.train.write_text(''.join(f'{seq} {i / 3}\n' for i, seq in enumerate(
+            ['AAAC', 'ACAA', 'CAAA', 'GGTT'] * 17)), encoding='utf-8')
+        for kernel in ('positional', 'weighted-degree', 'spectrum', 'subsequence'):
+            serial = self.run_converter('-train', str(self.train), '--kernel', kernel, '-k', '2',
+                                        '--threads', '1', '--backend', 'scalar')
+            self.assertEqual(serial.returncode, 0, serial.stderr)
+            for workers in ('2', '4', '100'):
+                parallel = self.run_converter('-train', str(self.train), '--kernel', kernel, '-k', '2',
+                                              '--threads', workers, '--backend', 'auto')
+                self.assertEqual(parallel.returncode, 0, parallel.stderr)
+                self.assertEqual(parallel.stdout, serial.stdout)
+        for args in (['--threads', '0'], ['--threads', '-1'], ['--threads', '1.5'],
+                     ['--threads', '2147483648'], ['--threads', '2', '--threads', '2'],
+                     ['--backend', 'gpu'], ['--backend', 'auto', '--backend', 'scalar']):
+            self.assert_failure('-train', str(self.train), *args)
+
 
 
 if __name__ == "__main__":

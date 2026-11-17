@@ -12,7 +12,8 @@ namespace {
 
 bool is_value_option(std::string_view option) {
     return option == "-train" || option == "-test" || option == "-k" || option == "-t" ||
-           option == "--kernel" || option == "--decay";
+           option == "--kernel" || option == "--decay" || option == "--threads" ||
+           option == "--backend";
 }
 
 int parse_integer(std::string_view token, std::string_view option) {
@@ -109,6 +110,14 @@ Options parse_options(const std::vector<std::string_view>& arguments) {
             options.kernel.type = static_cast<KernelType>(parse_integer(value, option));
         } else if (option == "--kernel") {
             options.kernel.type = parse_kernel_name(value);
+        } else if (option == "--threads") {
+            options.execution.threads = parse_integer(value, option);
+        } else if (option == "--backend") {
+            if (value != "auto" && value != "scalar") {
+                throw std::invalid_argument("--backend must be auto or scalar");
+            }
+            options.execution.backend =
+                value == "auto" ? CpuBackend::automatic : CpuBackend::scalar;
         } else {
             options.kernel.decay = parse_decimal(value, option);
         }
@@ -123,12 +132,13 @@ Options parse_options(const std::vector<std::string_view>& arguments) {
         throw std::invalid_argument("--decay is only valid with --kernel subsequence");
     }
     options.kernel.validate();
+    options.execution.validate();
     return options;
 }
 
 std::string_view usage_text() {
     return "Usage: string-kernels -train FILE [-test FILE] [-k K] [-t TYPE | --kernel NAME] "
-           "[--decay LAMBDA]\n"
+           "[--decay LAMBDA] [--threads N] [--backend auto|scalar]\n"
            "       string-kernels --help\n"
            "       string-kernels --version\n"
            "\n"
@@ -140,6 +150,8 @@ std::string_view usage_text() {
            "3 subsequence\n"
            "  --kernel     positional, weighted-degree, spectrum, or subsequence\n"
            "  --decay      SSK gap decay, finite in (0, 1] (default: 0.5)\n"
+           "  --threads    Positive native worker count (default: 1)\n"
+           "  --backend    auto CPU dispatch or scalar (default: auto)\n"
            "  --help       Show this help\n"
            "  --version    Show project and bundled LIBSVM versions\n";
 }
