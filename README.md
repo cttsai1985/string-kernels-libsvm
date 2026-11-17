@@ -2,11 +2,12 @@
 
 **Support vector learning directly from sequences.**
 
-Chia-Ta Tsai developed the original code during doctoral research in computational
-biology, reimplementing the weighted-degree string kernel for regression with
-LIBSVM. The project has since been modernized through agentic coding into a tested
-C++17 library with compiled Python packages and scikit-learn integration.
-Standalone training and prediction tools use unmodified LIBSVM.
+The original C++ implementation converted amino-acid sequences into precomputed
+weighted-degree kernel matrices for regression with LIBSVM. It was developed
+during Chia-Ta Tsai’s doctoral research in computational biology. The project has
+since been modernized through agentic coding, retaining the standalone LIBSVM
+workflow and adding a tested C++17 library, compiled Python packages, and
+scikit-learn integration.
 
 A string kernel compares sequences through shared patterns rather than requiring
 a manually constructed feature table. Different kernels encode different
