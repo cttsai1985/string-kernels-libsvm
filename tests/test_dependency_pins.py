@@ -98,7 +98,7 @@ class DependencyPins(unittest.TestCase):
 
     def test_project_version_is_pinned(self):
         content = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
-        self.assertRegex(content, r"project\(StringKernel4LIBSVM\s+VERSION\s+1\.0\.1\b")
+        self.assertRegex(content, r"project\(StringKernel4LIBSVM\s+VERSION\s+1\.1\.0\b")
 
     def test_python_build_and_release_dependencies_are_pinned(self):
         project = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
@@ -113,6 +113,14 @@ class DependencyPins(unittest.TestCase):
         self.assertIn("build==1.6.1", workflow)
         binding = (ROOT / "cmake/Python.cmake").read_text(encoding="utf-8")
         self.assertIn("pybind11 3.1.0 EXACT", binding)
+
+    def test_threaded_coverage_uses_atomic_profile_updates(self):
+        cmake = (ROOT / 'CMakeLists.txt').read_text(encoding='utf-8')
+        self.assertIn('--coverage -fprofile-update=atomic -O0 -g', cmake)
+        workflow = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        self.assertIn(r"--filter 'src/.*\.(cpp|hpp)$'", workflow)
+        cpu = (ROOT / 'cmake/Cpu.cmake').read_text(encoding='utf-8')
+        self.assertRegex(cpu, r'option\(STRINGKERNEL_ENABLE_SIMD[^)]* ON\)')
 
     def test_test_framework_archive_is_pinned(self):
         path = ROOT / "cmake" / "Dependencies.cmake"

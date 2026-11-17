@@ -1,4 +1,5 @@
 #include "stringkernel/kernels.hpp"
+#include "cpu_kernels.hpp"
 #include "kernel_evaluator.hpp"
 
 #include <algorithm>
@@ -134,18 +135,7 @@ double degree_weight(int degree, std::size_t order) {
 
 double weighted_degree(std::string_view a, std::string_view b, int degree) {
     validate_degree(degree);
-    const auto length = std::min(a.size(), b.size());
-    const auto maximum_order = static_cast<std::size_t>(degree);
-    const auto scale = weight_scale(degree);
-    double score = 0;
-    std::size_t run = 0;
-    const auto d = static_cast<double>(degree);
-    for (std::size_t position = length; position > 0; --position) {
-        run = a[position - 1] == b[position - 1] ? run + 1 : 0;
-        const auto count = static_cast<double>(std::min(run, maximum_order));
-        score += count * (2.0 * d - count + 1.0) * (scale / 2.0);
-    }
-    return score;
+    return detail::weighted_degree_cpu(a, b, degree);
 }
 
 double weighted_degree_self(std::string_view sequence, int degree) {
@@ -207,13 +197,8 @@ double raw_kernel(std::string_view a, std::string_view b, const KernelConfig& co
         if (a.empty() || a.size() != b.size()) {
             throw std::invalid_argument("DSK requires nonempty sequences of equal length");
         }
-        std::size_t matches = 0;
-        for (std::size_t position = 0; position < a.size(); ++position) {
-            if (a[position] == b[position]) {
-                ++matches;
-            }
-        }
-        return static_cast<double>(matches) / static_cast<double>(a.size());
+        return static_cast<double>(detail::positional_matches(a, b)) /
+               static_cast<double>(a.size());
     }
     case KernelType::weighted_degree:
         return weighted_degree(a, b, config.degree);

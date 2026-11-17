@@ -44,6 +44,12 @@ analytical `O(L)` pair work and constant working memory, including highly
 similar sequences and large requested degrees. This changes the evaluation
 algorithm, not the feature map. Self-kernels use `O(min(d,L))` work.
 
+For orders up to 32, portable and SIMD implementations instead count the same
+matching substrings with fixed-size equality masks. AVX2/POPCNT or ARM NEON
+accelerates byte comparisons; larger degrees retain the matching-run scan.
+These are equivalent evaluations of the formula, with fixed auxiliary storage.
+See [hardware execution](OPTIMIZATION.md).
+
 Matrix calls cache self-kernels, and spectrum calls also cache per-sequence
 frequency maps. Python training matrices reuse symmetry; the CLI streams rows
 without retaining a dense matrix. See [benchmarks](BENCHMARKS.md) for measured

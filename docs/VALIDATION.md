@@ -269,3 +269,49 @@ Independent review found no concrete correctness or benchmark blockers. Hosted
 current-commit CI, artifact verification and the merge are linked in the issue
 closeout and release. Python-only builds now include `src/kernel_evaluator.cpp`
 alongside the kernel functions and binding, and still exclude CLI/parser code.
+
+
+## SIMD and native CPU workers (2026-11-17)
+
+Issue [#24](https://github.com/cttsai1985/string-kernels-libsvm/issues/24) records
+the hardware scope requested by the owner. RED: 35 focused Python execution/
+solver cases failed against v1.0.1 because n_jobs/backend were absent; the CLI
+execution-control test failed on unknown --threads. Independently specified
+native CPU/thread tests first failed on missing interfaces before implementation.
+
+MEASURED local GREEN: 62/62 CTest cases; 62/62 ASan/UBSan; a compiled portable-only
+wheel reports scalar and passes all 105 installed Python tests. After adding long
+vector-sized feature-map fixtures, the final Python/benchmark suite passes 116
+cases (105 installed-package cases plus 11 benchmark checks). These fixtures run
+on every wheel platform and cover automatic and portable execution, block tails,
+large requested degree, thread counts above row count, rectangular reference
+ordering, cloning/persistence and real SVC/SVR predictions.
+
+The first threaded coverage run exposed non-atomic GCC instrumentation counters,
+not a numerical failure. Coverage compilation now uses -fprofile-update=atomic;
+no parser errors are ignored and the 98% floor is unchanged. The filter now includes private implementation headers, so the SIMD templates
+remain inside the gate. MEASURED final local coverage: 585/593 lines (98.7%),
+74/74 functions and 631/835 branches. The 64-row cap has an independent pin test.
+Final hosted current-commit results remain
+in the issue/release closeout.
+
+Independent review caught an installed-C++ consumer failure: exported
+Threads::Threads was unresolved by the documented include-only CMake example.
+Its new real consumer test failed to configure before adding find_package(Threads
+REQUIRED), then compiled and executed the installed threaded library successfully.
+RAII owns cancellation/joining, including partial worker launch failure; no worker
+can retain call-scoped inputs after return. GCC TSan could not start on this WSL
+host (unexpected memory mapping, with PIE and non-PIE), so no TSan pass is claimed.
+
+MEASURED independent short CPU checks: 4,800 byte-oracle comparisons passed in
+AVX2, 4,800 in a separately compiled portable backend, and 4,800 under ASan/UBSan.
+AVX2 flags are source-local; runtime CPU/OS-state checks protect older machines.
+The actual benchmark extension contains vector compare/movemask/popcount
+instructions, and its raw hash matches the measured artifact. Hosted ARM/Windows
+checks validate their compiled paths before merge.
+
+Five-trial hardware runs compare v1.0.1, portable, SIMD-only, and two-/four-thread
+modes on twelve regimes, including complete CLI costs. All matrices matched.
+Additional CLI batching and mirror-layout experiments retain losses and noisy
+ranges. The latter had mixed results, so production keeps single-pass mirrored
+ownership. See [OPTIMIZATION.md](OPTIMIZATION.md) and its raw data/disassembly.

@@ -1,6 +1,7 @@
 #ifndef STRINGKERNEL_OPTIONS_H
 #define STRINGKERNEL_OPTIONS_H
 
+#include "stringkernel/execution.hpp"
 #include "stringkernel/kernels.hpp"
 
 #include <filesystem>
@@ -14,6 +15,7 @@ struct Options {
     std::filesystem::path train;
     std::optional<std::filesystem::path> test;
     KernelConfig kernel;
+    ExecutionConfig execution;
     bool help = false;
     bool version = false;
 };

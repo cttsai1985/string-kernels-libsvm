@@ -1,5 +1,6 @@
 #include "stringkernel/libsvm_writer.hpp"
 #include "kernel_evaluator.hpp"
+#include "parallel_rows.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -56,8 +57,9 @@ void require_output(const std::ostream& output) {
 } // namespace
 
 void write_precomputed(std::ostream& output, const Dataset& reference, const Dataset& target,
-                       const KernelConfig& config) {
+                       const KernelConfig& config, const ExecutionConfig& execution) {
     config.validate();
+    execution.validate();
     validate_samples(reference);
     validate_samples(target);
     if (config.type == KernelType::distance) {
@@ -74,20 +76,33 @@ void write_precomputed(std::ostream& output, const Dataset& reference, const Dat
     for (const auto& sample : target) {
         target_sequences.push_back(sample.sequence);
     }
-    const detail::KernelEvaluator evaluator(config, reference_sequences, target_sequences);
-    std::ostringstream row;
-    row.imbue(std::locale::classic());
-    row << std::setprecision(std::numeric_limits<double>::max_digits10);
-    for (std::size_t i = 0; i < target.size(); ++i) {
-        row.str("");
-        row.clear();
+    const detail::KernelEvaluator evaluator(config, reference_sequences, target_sequences,
+                                            execution.backend);
+    const auto format_row = [&](std::size_t i) {
+        std::ostringstream row;
+        row.imbue(std::locale::classic());
+        row << std::setprecision(std::numeric_limits<double>::max_digits10);
         row << target[i].label << " 0:" << i + 1;
         for (std::size_t j = 0; j < reference.size(); ++j) {
-            const double value = evaluator.value(i, j);
-            row << ' ' << j + 1 << ':' << value;
+            row << ' ' << j + 1 << ':' << evaluator.value(i, j);
         }
-        output << row.str() << '\n';
-        require_output(output);
+        row << '\n';
+        return row.str();
+    };
+    const auto workers = std::min(target.size(), static_cast<std::size_t>(execution.threads));
+    // Bound buffered text independently of matrix size; amortize worker creation.
+    const auto block_rows =
+        workers == 1 ? 1 : std::min(target.size(), detail::maximum_buffered_rows);
+    for (std::size_t first = 0; first < target.size(); first += block_rows) {
+        const auto count = std::min(block_rows, target.size() - first);
+        std::vector<std::string> rows(count);
+        detail::parallel_rows(count, execution.threads, [&](std::size_t offset) {
+            rows[offset] = format_row(first + offset);
+        });
+        for (const auto& row : rows) {
+            output << row;
+            require_output(output);
+        }
     }
     output.flush();
     require_output(output);

@@ -87,10 +87,11 @@ cmake --preset coverage
 cmake --build --preset coverage
 ctest --preset coverage
 python3 -c "from pathlib import Path; Path('coverage').mkdir(exist_ok=True)"
-gcovr --root . --filter 'src/.*\.cpp$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
+gcovr --root . --filter 'src/.*\.(cpp|hpp)$' --print-summary --fail-under-line 98 --html-details coverage/index.html --xml coverage/coverage.xml
 ```
 
 The filter includes project implementation and excludes tests and upstream code.
+Coverage uses GCC atomic profile updates so native worker threads cannot race on instrumentation counters.
 The line-coverage floor is a regression gate. Consult
 [validation evidence](VALIDATION.md) for the measured baseline. Coverage requires
 GCC, and the build rejects combined coverage and sanitizer instrumentation.
@@ -138,6 +139,7 @@ include its `stringkernelTargets.cmake` and link `stringkernel::stringkernel`.
 For example, after the default installation above:
 
 ```cmake
+find_package(Threads REQUIRED)
 include("/absolute/path/to/build/install/lib/cmake/StringKernel4LIBSVM/stringkernelTargets.cmake")
 target_link_libraries(your_target PRIVATE stringkernel::stringkernel)
 ```

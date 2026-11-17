@@ -7,7 +7,7 @@ import stringkernels
 def test_installed_native_extension_and_version():
     from stringkernels import _native
     assert Path(_native.__file__).suffix in ('.so', '.pyd')
-    assert stringkernels.__version__ == '1.0.1'
+    assert stringkernels.__version__ == '1.1.0'
     assert importlib.metadata.version('string-kernels-libsvm') == stringkernels.__version__
 
 

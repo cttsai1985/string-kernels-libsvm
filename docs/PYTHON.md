@@ -3,12 +3,12 @@
 ## Install a compiled package
 
 Download a wheel matching your Python version and platform from
-[the v1.0.1 release](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.0.1).
+[the v1.1.0 release](https://github.com/cttsai1985/string-kernels-libsvm/releases/tag/v1.1.0).
 Alternatively, let pip select the matching release wheel and install the optional
 scikit-learn dependency in one command:
 
 ```sh
-python -m pip install --only-binary=string-kernels-libsvm --find-links https://github.com/cttsai1985/string-kernels-libsvm/releases/expanded_assets/v1.0.1 "string-kernels-libsvm[sklearn]==1.0.1"
+python -m pip install --only-binary=string-kernels-libsvm --find-links https://github.com/cttsai1985/string-kernels-libsvm/releases/expanded_assets/v1.1.0 "string-kernels-libsvm[sklearn]==1.1.0"
 ```
 
 This is a GitHub Release installation, not a claim of PyPI publication. NumPy and
@@ -118,3 +118,24 @@ Project code is BSD-3-Clause. Wheels carry LICENSE and the full pybind11 binding
 notice. They do not bundle LIBSVM, Catch2, NumPy, or scikit-learn. Optional runtime
 dependencies retain the terms in their own distributions. See
 [licensing](LICENSING.md) and [third-party notices](../THIRD_PARTY_NOTICES.md).
+
+
+## CPU execution controls
+
+`pairwise` and `StringKernel` accept `n_jobs` (a positive integer, default `1`)
+and `backend` (`"auto"` by default, or `"scalar"`). Automatic dispatch uses
+supported CPU instructions with a portable fallback. Unsupported instruction
+sets never need to be forced. Negative counts, including `-1`, are rejected;
+choose the worker budget explicitly.
+
+Use `StringKernel(n_jobs=4)` when kernel construction owns four CPU cores.
+When `GridSearchCV` or another outer layer runs folds in parallel, keep the
+transformer at `n_jobs=1`, or keep the outer layer serial. These C++ threads
+are not an OpenMP/BLAS pool and are not limited by `threadpoolctl` or joblib's
+thread-pool environment variables. SSK temporary memory grows with active
+workers. SIMD applies to positional and weighted-degree orders up to 32;
+higher weighted-degree orders retain the linear scan. Spectrum and SSK can
+use row threads but have no explicit SIMD pair evaluator.
+
+See the [optimization guide](OPTIMIZATION.md) for measured regimes, CPU backend
+readback, memory costs, and reproducible hardware comparisons.

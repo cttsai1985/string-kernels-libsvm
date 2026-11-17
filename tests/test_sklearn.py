@@ -67,7 +67,7 @@ def test_cross_validation_and_grid_search_keep_fold_references():
 
 
 def test_transformer_defaults_and_length_validation():
-    assert StringKernel().get_params() == dict(kernel='weighted-degree', degree=5, decay=.5)
+    assert StringKernel().get_params() == dict(kernel='weighted-degree', degree=5, decay=.5, n_jobs=1, backend='auto')
     with pytest.raises(ValueError):
         StringKernel(kernel='positional').fit(['AC', 'A'])
     with pytest.raises(ValueError):
@@ -79,3 +79,22 @@ def test_fit_transform_materializes_a_generator_once():
     actual = transformer.fit_transform(iter(TRAIN), LABELS)
     np.testing.assert_array_equal(actual, pairwise(TRAIN, kernel='spectrum', degree=2))
     assert transformer.reference_ == tuple(TRAIN)
+
+
+@pytest.mark.parametrize('backend', ['scalar', 'auto'])
+def test_parallel_transformer_clone_persistence_and_real_solvers(backend):
+    config = dict(kernel='spectrum', degree=2, n_jobs=4, backend=backend)
+    transformer = StringKernel(**config)
+    assert clone(transformer).get_params() == transformer.get_params()
+    pipeline = make_pipeline(transformer, SVC(kernel='precomputed'))
+    pipeline.fit(TRAIN, LABELS)
+    np.testing.assert_array_equal(pipeline.predict(['ACC', 'GGC']), [1, -1])
+    np.testing.assert_array_equal(pickle.loads(pickle.dumps(pipeline)).predict(['ACC', 'GGC']), [1, -1])
+    labels = [.2, .4, 1.5, 1.7]
+    regression = make_pipeline(StringKernel(**config), SVR(kernel='precomputed', C=3))
+    regression.fit(TRAIN, labels)
+    direct = SVR(kernel='precomputed', C=3).fit(pairwise(TRAIN, kernel='spectrum', degree=2), labels)
+    np.testing.assert_allclose(regression.predict(['ACC', 'GGC']),
+                               direct.predict(pairwise(['ACC', 'GGC'], TRAIN, kernel='spectrum', degree=2)))
+    with pytest.raises(ValueError):
+        transformer.set_params(n_jobs=0).fit(TRAIN)

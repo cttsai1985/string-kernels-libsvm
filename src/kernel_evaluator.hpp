@@ -1,6 +1,7 @@
 #ifndef STRINGKERNEL_KERNEL_EVALUATOR_HPP
 #define STRINGKERNEL_KERNEL_EVALUATOR_HPP
 
+#include "stringkernel/execution.hpp"
 #include "stringkernel/kernels.hpp"
 
 #include <string_view>
@@ -18,7 +19,8 @@ long double count_dot(const SpectrumCounts& left, const SpectrumCounts& right);
 class KernelEvaluator {
   public:
     KernelEvaluator(const KernelConfig& config, const std::vector<std::string_view>& reference,
-                    const std::vector<std::string_view>& target);
+                    const std::vector<std::string_view>& target,
+                    CpuBackend backend = CpuBackend::automatic);
     bool symmetric() const { return symmetric_; }
     double value(std::size_t row, std::size_t column) const;
 
@@ -31,6 +33,7 @@ class KernelEvaluator {
     Cohort prepare(const std::vector<std::string_view>& sequences) const;
     KernelConfig config_;
     bool symmetric_;
+    CpuBackend backend_;
     Cohort reference_;
     Cohort target_;
 };

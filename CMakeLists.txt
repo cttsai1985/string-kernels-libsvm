@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(StringKernel4LIBSVM VERSION 1.0.1 LANGUAGES CXX)
+project(StringKernel4LIBSVM VERSION 1.1.0 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)
@@ -9,6 +9,8 @@ option(STRINGKERNEL_BUILD_PYTHON "Build the Python extension" OFF)
 
 option(STRINGKERNEL_SANITIZERS "Enable address and undefined-behavior sanitizers" OFF)
 option(STRINGKERNEL_COVERAGE "Enable GCC coverage for project sources" OFF)
+include(cmake/Cpu.cmake)
+find_package(Threads REQUIRED)
 
 if(STRINGKERNEL_SANITIZERS AND (WIN32 OR NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"))
   message(FATAL_ERROR "Sanitizers require GCC or Clang on a supported Unix platform")
@@ -33,7 +35,7 @@ function(stringkernel_project_target target)
     target_link_options(${target} PUBLIC -fsanitize=address,undefined)
   endif()
   if(STRINGKERNEL_COVERAGE)
-    target_compile_options(${target} PRIVATE --coverage -O0 -g)
+    target_compile_options(${target} PRIVATE --coverage -fprofile-update=atomic -O0 -g)
     target_link_options(${target} PUBLIC --coverage)
   endif()
 endfunction()
@@ -46,7 +48,10 @@ if(STRINGKERNEL_BUILD_PYTHON)
   endif()
 endif()
 
-add_library(stringkernel STATIC src/kernels.cpp src/kernel_evaluator.cpp src/dataset.cpp src/libsvm_writer.cpp)
+add_library(stringkernel STATIC src/kernels.cpp src/kernel_evaluator.cpp src/dataset.cpp src/libsvm_writer.cpp
+  src/execution.cpp src/parallel_rows.cpp)
+stringkernel_cpu_sources(stringkernel)
+target_link_libraries(stringkernel PUBLIC Threads::Threads)
 set_target_properties(stringkernel PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(stringkernel PUBLIC cxx_std_17)
 target_include_directories(stringkernel PUBLIC

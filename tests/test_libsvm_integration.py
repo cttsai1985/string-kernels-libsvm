@@ -202,7 +202,7 @@ class LibsvmIntegrationTests(unittest.TestCase):
         predictor = prefix / "bin" / f"svm-predict{extension}"
         for executable in [converter, trainer, predictor]:
             self.assertTrue(executable.is_file(), executable)
-        for name in ["kernels.hpp", "dataset.hpp", "libsvm_writer.hpp"]:
+        for name in ["kernels.hpp", "dataset.hpp", "libsvm_writer.hpp", "execution.hpp"]:
             self.assertTrue((prefix / "include" / "stringkernel" / name).is_file())
         self.assertTrue(list(prefix.rglob("libstringkernel.a")) or
                         list(prefix.rglob("stringkernel.lib")))
@@ -211,7 +211,7 @@ class LibsvmIntegrationTests(unittest.TestCase):
                          (self.options.source / "third_party" / "libsvm" / "COPYRIGHT").read_bytes())
         self.assertTrue((copyright_file.parent / "THIRD_PARTY_NOTICES.md").is_file())
         self.assertEqual(self.run_program(converter, "--version").stdout,
-                         "string-kernels 1.0.1 (LIBSVM 3.37)\n")
+                         "string-kernels 1.1.0 (LIBSVM 3.37)\n")
         train_matrix = self.directory / "installed.train"
         test_matrix = self.directory / "installed.test"
         model = self.directory / "installed.model"
@@ -224,6 +224,31 @@ class LibsvmIntegrationTests(unittest.TestCase):
         self.run_program(trainer, "-q", "-s", "3", "-t", "4", train_matrix, model)
         self.run_program(predictor, test_matrix, model, output)
         self.assertEqual(len(self.predictions(output)), len(records(target)))
+        # Compile exactly the documented installed-library CMake setup, in a
+        # fresh project that cannot inherit dependency targets from this build.
+        consumer = self.directory / "consumer"
+        consumer.mkdir()
+        guide = (self.options.source / "docs" / "DEVELOPMENT.md").read_text(encoding="utf-8")
+        fragment = guide.split("```cmake\n", 1)[1].split("```", 1)[0]
+        targets = next(prefix.rglob("stringkernelTargets.cmake"))
+        fragment = fragment.replace(
+            "/absolute/path/to/build/install/lib/cmake/StringKernel4LIBSVM/stringkernelTargets.cmake",
+            targets.as_posix())
+        (consumer / "CMakeLists.txt").write_text(
+            "cmake_minimum_required(VERSION 3.25)\nproject(Consumer LANGUAGES CXX)\n"
+            "add_executable(your_target main.cpp)\n" + fragment, encoding="utf-8")
+        (consumer / "main.cpp").write_text(
+            '#include "stringkernel/libsvm_writer.hpp"\n#include <cmath>\n#include <sstream>\n'
+            'int main() { using namespace stringkernel;\n'
+            'Dataset d{{"AC",1},{"AD",-1}}; std::ostringstream out;\n'
+            'write_precomputed(out,d,d,{KernelType::weighted_degree,2},{2,CpuBackend::scalar});\n'
+            'return std::abs(kernel_value("AC","AD",{KernelType::weighted_degree,2})-.4)<1e-12 '
+            '&& out.str().find("-1 0:2")!=std::string::npos ? 0 : 1; }\n', encoding="utf-8")
+        consumer_build = consumer / "build"
+        self.run_program(self.options.cmake, "-S", consumer, "-B", consumer_build)
+        self.run_program(self.options.cmake, "--build", consumer_build, "--config", self.options.config)
+        self.run_program(next(path for path in consumer_build.rglob(f"your_target{extension}")
+                              if path.is_file()))
 
 
 if __name__ == "__main__":
