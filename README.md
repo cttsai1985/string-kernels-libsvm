@@ -4,6 +4,9 @@
 normalized string-kernel similarities for classification and regression, with a
 C++17 kernel library and unmodified LIBSVM training and prediction tools.
 
+The original version was based on Chia-Ta Tsai’s PhD research code for
+string-kernel regression with LIBSVM in computational biology.
+
 A string kernel compares sequences through shared patterns rather than requiring
 a manually constructed feature table. Different kernels encode different
 assumptions: whether a pattern's position matters, whether it must be contiguous,
